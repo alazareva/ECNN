@@ -1,5 +1,3 @@
-
-# look at runtimes http://stackoverflow.com/questions/34293714/tensorflow-can-i-measure-the-execution-time-of-individual-operations
 import re
 import os.path
 import tensorflow as tf
