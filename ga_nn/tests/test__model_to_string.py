@@ -12,5 +12,5 @@ class Test_model_to_string(TestCase):
     model.convolutional_layers.append(c0)
     model.convolutional_layers.append(c1)
     model.dense_layers.append(d0)
-    print model_to_string(model)
+    print(model_to_string(model))
     pass

@@ -8,6 +8,7 @@ import random
 import itertools
 
 import numpy as np
+#from ga_nn.tensorflow_model import  TensorflowModel
 
 
 #from tensorflow_model import TensorflowModel
@@ -18,14 +19,15 @@ import numpy as np
 
 # ZOMBIE : bring back models that were mutated away from earier generations
 
-from class_defs import  *
+from ga_nn.class_defs import  *
 
 # TODO use coverage testing
 # TODO refactor to take advantage of namedlist defaults
 def run():
 	tournament_report = {} # or load previous
+	error_logs = []
 	for generation in range(CURRENT_GENERATION, MAX_GENERATIONS):
-		print 'Getting new Generation %d' %(generation)
+		print('Getting new Generation %d' %(generation))
 		if CURRENT_GENERATION > 0:
 			models_params = mutate(tournament_report[generation-1]['selected'])
 		else:
@@ -33,16 +35,18 @@ def run():
 
 		model_summaries = {}
 		population = 0
-		#TODO implement further iteration if crash occurs
+		#TODO what if this crashes
 		while population < POPULATION:
 			model, training_parameters = models_params.next()
+			model.generation = CURRENT_GENERATION
 			tf_model = TensorflowModel()
-			success, trained_model, layer_parameters, summary = tf_model.run(DATASET ,model, training_parameters)
+			success, *reports = tf_model.run(DATASET ,model, training_parameters)
 			if success:
+				trained_model, layer_parameters, summary = reports
 				model_name = '%d_%d' %(generation, population)
 				trained_model.name = model_name
-				print 'model, accuracy:', model_name, summary.validation_accuracy
-				print 'model structure:', model_to_string(model)
+				print('model, accuracy:', model_name, summary.validation_accuracy)
+				print('model structure:', model_to_string(model))
 				model_summaries[model_name] = summary
 				model_path = os.path.join(DIR, generation, population + '_model.p')
 				params_path = os.path.join(DIR, generation, population + '_params.p')
@@ -52,8 +56,7 @@ def run():
 					pickle.dump(layer_parameters, params_file)
 				population += 1
 			else:
-				print 'Error'
-				#save errors
+				error_logs.append(reports)
 
 		# TODO save report periodically so that it can be loaded if crash happens
 		summary_path = os.path.join(DIR, generation, 'summary.p')
@@ -67,6 +70,9 @@ def run():
 	report_path = os.path.join(DIR, 'report.p')
 	with open(report_path, 'w') as report_file:
 		pickle.dump(tournament_report, report_path)
+	errors_path = os.path.join(DIR, 'errors.p')
+	with open(report_path, 'w') as errors_file:
+		pickle.dump(errors, errors_file)
 	# TODO write test code to run test stats on final 5 models
 
 
@@ -79,18 +85,18 @@ def generate_initial_population():
 	one convolutional layer followed by a fully connected output layer
 
 	'''
-
 	layers_to_train = []
 	filter_size = get_filter_size(IMAGE_SHAPE[0], IMAGE_SHAPE[1])
 	filters = get_number_of_filters()
 
-	layer = ConvolutionalLayer(filter_size, filters, None, 'c0')
+	layer = ConvolutionalLayer(filter_size=filter_size, filters=filters, name='c0')
 	layers_to_train.append('c0')
 
-	logits = Logits('logits')
+	logits = Logits()
 	layers_to_train.append('logits')
-	model = Model([layer],[],logits, None, None, IMAGE_SHAPE, NUM_CLASSES)
-	training_parameters = TrainingParameters(layers_to_train, interations_function, LEARNING_RATE,{})
+	model = Model(convolutional_layers=[layer],logitslogits=, image_shape=IMAGE_SHAPE, clasees=NUM_CLASSES)
+	training_parameters = TrainingParameters(layers_to_train=layers_to_train, iterations=interations_function,
+											 learning_rate=LEARNING_RATE)
 
 	yield model, training_parameters
 
@@ -102,18 +108,16 @@ def generate_mutated_models(summaries):
 
 	# keep track if cross over done
 	seen = set()
-	for mutation in _get_mutations(summaries):
-		if mutation[0] == CROSS_MODELS and mutation not in seen:
-			model1_name, model2_name = mutation[1]
-			mutation_params = mutation[2]
+	for mutation, *params in _get_mutations(summaries):
+		if mutation == CROSS_MODELS and (mutation,params) not in seen: # make sure this puts the tuple back
+			model1_name, model2_name, mutation_params = params
 			model_params1 = get_model_and_saved_parameters(model1_name)
 			model_params2 = get_model_and_saved_parameters(model2_name)
 			yield cross_models(model_params1, model_params2, **mutation_params)
 		else:
-			model_name = mutation[1]
-			mutation_params = mutation[2]
+			model_name, mutation_params = params
 			model, saved_parameters = get_model_and_saved_parameters(model_name)
-			yield mutate(mutation[0], model, saved_parameters, **mutation_params)
+			yield mutate(mutation, model, saved_parameters, **mutation_params)
 
 
 def _get_mutations(summaries):
@@ -146,10 +150,10 @@ def possible_cross_overs(summaries):
 		channels2 = summaries[n2].input_channels
 		x, y = np.where((np.absolute(filters1[:, np.newaxis] - filters2)
 						 + np.absolute(channels1[:, np.newaxis] - channels2)) == 0)
-		pairs = zip(x, y)
+		pairs = list(zip(x, y))
 		if pairs:
 			_possible_cross_overs[(n1, n2)] = pairs
-			_possible_cross_overs[(n2, n1)] = zip(y, x)
+			_possible_cross_overs[(n2, n1)] = list(zip(y, x))
 	return _possible_cross_overs
 
 
@@ -196,7 +200,7 @@ def cross_models(model_params1, model_params2, **muation_params):
 	new_biases = np.concatenate((layer_parameters1.biases, layer_parameters2.biases), axis=0)
 
 	model1.convolutional_layers[model1_layer_idx].filters = new_weights.shape[-1]
-	params1.saved_parameters[model1_layer.name] = ModelLayerParameters(new_weights, new_biases, np.zeros(MAX_GENERATIONS))
+	params1.saved_parameters[model1_layer.name] = ModelLayerParameters(weights=new_weights, biases=new_biases)
 	new_layer_index = model1_layer_idx + 1
 	model1.ancestor = (model1.name, model2.name)
 
@@ -232,8 +236,8 @@ def update_training_parameters(model, saved_parameters, new_layer_index):
 		if i > layers_to_freeze:
 			layers_to_train.append(layer.name)
 
-	new_training_parameters = TrainingParameters(layers_to_train, interations_function,
-													 LEARNING_RATE, new_saved_parameters)
+	new_training_parameters = TrainingParameters(layers_to_train=layers_to_train, iterations=interations_function,
+												 learning_rate=LEARNING_RATE, saved_parameters=new_saved_parameters)
 
 	return model, new_training_parameters
 
