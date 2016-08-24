@@ -1,11 +1,11 @@
 from unittest import TestCase
-from ga_nn.class_defs import  *
+from ecnn.class_defs import  *
 
 class TestRemove_dense_layer(TestCase):
 
 
     def test_remove_dense_layer_last(self):
-        from ga_nn.tournament import remove_dense_layer
+        from ecnn.tournament import remove_dense_layer
         c0 = ConvolutionalLayer(filter_size=5, filters=10, output_shape=[20, 20, 3], name='c0')
         d0 = DenseLayer(hidden_units=40, name='d0')
         d1 = DenseLayer(hidden_units=42, name='d1')
@@ -27,7 +27,7 @@ class TestRemove_dense_layer(TestCase):
 
 
 def test_remove_dense_layer_last(self):
-    from ga_nn.tournament import remove_dense_layer
+    from ecnn.tournament import remove_dense_layer
     c0 = ConvolutionalLayer(filter_size=5, filters=10, output_shape=[20, 20, 3], name='c0')
     d0 = DenseLayer(hidden_units=40, name='d0')
     d1 = DenseLayer(hidden_units=42, name='d1')

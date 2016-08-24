@@ -1,10 +1,10 @@
 from unittest import TestCase
 import numpy as np
-from ga_nn.class_defs import  *
+from ecnn.class_defs import  *
 
 class TestPossible_cross_overs(TestCase):
     def test_possible_cross_overs_same_langth(self):
-        from ga_nn.tournament import possible_cross_overs
+        from ecnn.tournament import possible_cross_overs
         s1 = ModelSummary(name='1_1', filters=np.array([2, 4, 5]), input_channels=np.array([6, 7, 8]))
         s2 = ModelSummary(name='1_2', filters=np.array([3, 5, 3]), input_channels=np.array([1, 8, 3]))
         s3 = ModelSummary(name='1_3', filters=np.array([3, 4, 1]), input_channels=np.array([3, 7, 1]))
@@ -21,7 +21,7 @@ class TestPossible_cross_overs(TestCase):
 
 
 def test_possible_cross_overs_different_langth(self):
-    from ga_nn.tournament import possible_cross_overs
+    from ecnn.tournament import possible_cross_overs
     s1 = ModelSummary(name='1_1', filters=np.array([2, 4, 1, 7, 3]), input_channels=np.array([6, 7, 8, 2, 1]))
     s2 = ModelSummary(name='1_2', filters=np.array([3, 5, 3]), input_channels=np.array([1, 8, 3]))
 
@@ -34,7 +34,7 @@ def test_possible_cross_overs_different_langth(self):
 
 
 def test_possible_cross_overs_multiple_matches(self):
-    from ga_nn.tournament import possible_cross_overs
+    from ecnn.tournament import possible_cross_overs
     s1 = ModelSummary(name='1_1', filters=np.array([3, 5, 1]), input_channels=np.array([1, 8, 3]))
     s2 = ModelSummary(name='1_2', filters=np.array([3, 5, 3]), input_channels=np.array([1, 8, 3]))
 

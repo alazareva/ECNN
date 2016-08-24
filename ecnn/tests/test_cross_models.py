@@ -1,10 +1,10 @@
 from unittest import TestCase
 import numpy as np
-from ga_nn.class_defs import  *
+from ecnn.class_defs import  *
 
 class TestCross_models(TestCase):
     def test_cross_models_same_layer(self):
-        from ga_nn.tournament import cross_models
+        from ecnn.tournament import cross_models
         c0_1 = ConvolutionalLayer(filter_size=5, filters=3, output_shape=[20, 20, 3], name='c0')
         c0_2 = ConvolutionalLayer(filter_size=5, filters=2, output_shape=[20, 20, 3], name='c0')
 
@@ -43,7 +43,7 @@ class TestCross_models(TestCase):
 
 
     def test_cross_models_different_layer(self):
-        from ga_nn.tournament import cross_models
+        from ecnn.tournament import cross_models
         c0_1 = ConvolutionalLayer(filter_size=5, filters=3, output_shape=[20, 20, 3], name='c0')
         c2_1 = ConvolutionalLayer(filter_size=6, filters=2, output_shape=[40, 40, 3], name='c1')
 

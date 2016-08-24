@@ -2,7 +2,7 @@
 <project version="4">
   <component name="ProjectModuleManager">
     <modules>
-      <module fileurl="file://$PROJECT_DIR$/.idea/cnn_ga.iml" filepath="$PROJECT_DIR$/.idea/cnn_ga.iml" />
+      <module fileurl="file://$USER_HOME$/Documents/ECNN/.idea/cnn_ga.iml" filepath="$USER_HOME$/Documents/ECNN/.idea/cnn_ga.iml" />
     </modules>
   </component>
 </project>

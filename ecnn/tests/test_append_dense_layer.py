@@ -1,10 +1,10 @@
 from unittest import TestCase
-from ga_nn.class_defs import  *
+from ecnn.class_defs import  *
 
 class TestAppend_dense_layer(TestCase):
 
     def test_append_dense_layer_to_conv(self):
-        from ga_nn.tournament import append_dense_layer
+        from ecnn.tournament import append_dense_layer
         c0 = ConvolutionalLayer(filter_size=5, filters=10, output_shape=[20, 20, 3], name='c0')
         logits = OutputLayer()
 
@@ -21,7 +21,7 @@ class TestAppend_dense_layer(TestCase):
         self.assertEqual(actual, expected)
 
     def test_append_dense_layer_to_dense(self):
-        from ga_nn.tournament import append_dense_layer
+        from ecnn.tournament import append_dense_layer
         c0 = ConvolutionalLayer(filter_size=5, filters=10, output_shape=[20, 20, 3], name='c0')
         d0 = DenseLayer(hidden_units=42, name='d0')
 

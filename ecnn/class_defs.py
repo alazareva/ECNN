@@ -1,5 +1,5 @@
 from namedlist import namedlist, FACTORY, NO_DEFAULT
-from ga_nn.defaults import  *
+from ecnn.defaults import  *
 
 OutputLayer = namedlist('OutputLayer', [('name', 'logits'), ('hidden_units', NUM_CLASSES)], use_slots=True, default=None)
 
