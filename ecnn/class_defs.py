@@ -34,3 +34,7 @@ TrainingParameters = namedlist('TrainingParameters', [('training_set_size', NO_D
 													  ('saved_parameters', FACTORY(dict))], default=None)
 
 LayerValues = namedlist('LayerValues', ['weights', 'biases'], default=None)
+
+# TODO have base classes for Mutation and Corss, each subclass has static method to compute probs and can
+# be intantiated ith moded to return mutated models, main program has list of cls and can contruct them on the fly
+# based on retuned probs, add @ cache wwhen loaded morels but make deep copies
