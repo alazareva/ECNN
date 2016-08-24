@@ -1,7 +1,7 @@
 from namedlist import namedlist, FACTORY, NO_DEFAULT
 from ga_nn.defaults import  *
 
-Logits = namedlist('Logits', [('name', 'logits')], use_slots=True)
+Logits = namedlist('Logits', [('name', 'logits'), ('hidden_units', NUM_CLASSES)],  se_slots=True, default=None)
 
 Model = namedlist('Model', [('generation', NO_DEFAULT),
 							('convolutional_layers', FACTORY(list)),

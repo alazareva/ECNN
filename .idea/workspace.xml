@@ -2,19 +2,9 @@
 <project version="4">
   <component name="ChangeListManager">
     <list default="true" id="189977df-d16c-4fe1-bf4d-545adba3a93e" name="Default" comment="">
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/.idea/cnn_ga.iml" afterPath="$PROJECT_DIR$/.idea/cnn_ga.iml" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/.idea/misc.xml" afterPath="$PROJECT_DIR$/.idea/misc.xml" />
       <change type="MODIFICATION" beforePath="$PROJECT_DIR$/.idea/workspace.xml" afterPath="$PROJECT_DIR$/.idea/workspace.xml" />
       <change type="MODIFICATION" beforePath="$PROJECT_DIR$/ga_nn/class_defs.py" afterPath="$PROJECT_DIR$/ga_nn/class_defs.py" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/ga_nn/defaults.py" afterPath="$PROJECT_DIR$/ga_nn/defaults.py" />
       <change type="MODIFICATION" beforePath="$PROJECT_DIR$/ga_nn/tensorflow_model.py" afterPath="$PROJECT_DIR$/ga_nn/tensorflow_model.py" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/ga_nn/tests/test__model_to_string.py" afterPath="$PROJECT_DIR$/ga_nn/tests/test__model_to_string.py" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/ga_nn/tests/test_append_convolutional_layer.py" afterPath="$PROJECT_DIR$/ga_nn/tests/test_append_convolutional_layer.py" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/ga_nn/tests/test_append_dense_layer.py" afterPath="$PROJECT_DIR$/ga_nn/tests/test_append_dense_layer.py" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/ga_nn/tests/test_cross_models.py" afterPath="$PROJECT_DIR$/ga_nn/tests/test_cross_models.py" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/ga_nn/tests/test_remove_convolutional_layer.py" afterPath="$PROJECT_DIR$/ga_nn/tests/test_remove_convolutional_layer.py" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/ga_nn/tests/test_remove_dense_layer.py" afterPath="$PROJECT_DIR$/ga_nn/tests/test_remove_dense_layer.py" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/ga_nn/tournament.py" afterPath="$PROJECT_DIR$/ga_nn/tournament.py" />
     </list>
     <ignored path="cnn_ga.iws" />
     <ignored path=".idea/workspace.xml" />
@@ -35,11 +25,11 @@
   </component>
   <component name="FileEditorManager">
     <leaf SIDE_TABS_SIZE_LIMIT_KEY="300">
-      <file leaf-file-name="tensorflow_model.py" pinned="false" current-in-tab="true">
+      <file leaf-file-name="tensorflow_model.py" pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/ga_nn/tensorflow_model.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="630">
-              <caret line="45" column="16" selection-start-line="45" selection-start-column="16" selection-end-line="45" selection-end-column="16" />
+            <state relative-caret-position="331">
+              <caret line="123" column="68" selection-start-line="123" selection-start-column="68" selection-end-line="123" selection-end-column="68" />
               <folding>
                 <element signature="e#0#23#0" expanded="true" />
               </folding>
@@ -81,11 +71,11 @@
           </provider>
         </entry>
       </file>
-      <file leaf-file-name="class_defs.py" pinned="false" current-in-tab="false">
+      <file leaf-file-name="class_defs.py" pinned="false" current-in-tab="true">
         <entry file="file://$PROJECT_DIR$/ga_nn/class_defs.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="-15">
-              <caret line="11" column="41" selection-start-line="11" selection-start-column="30" selection-end-line="11" selection-end-column="41" />
+            <state relative-caret-position="60">
+              <caret line="4" column="0" selection-start-line="4" selection-start-column="0" selection-end-line="4" selection-end-column="0" />
               <folding>
                 <element signature="e#0#52#0" expanded="true" />
               </folding>
@@ -102,7 +92,6 @@
     <option name="CHANGED_PATHS">
       <list>
         <option value="$PROJECT_DIR$/ga_nn/defaults.py" />
-        <option value="$PROJECT_DIR$/ga_nn/class_defs.py" />
         <option value="$PROJECT_DIR$/ga_nn/tests/test_append_convolutional_layer.py" />
         <option value="$PROJECT_DIR$/ga_nn/tests/test_append_dense_layer.py" />
         <option value="$PROJECT_DIR$/ga_nn/tests/test_cross_models.py" />
@@ -110,6 +99,7 @@
         <option value="$PROJECT_DIR$/ga_nn/tests/test_remove_convolutional_layer.py" />
         <option value="$PROJECT_DIR$/ga_nn/tests/test_remove_dense_layer.py" />
         <option value="$PROJECT_DIR$/ga_nn/tournament.py" />
+        <option value="$PROJECT_DIR$/ga_nn/class_defs.py" />
         <option value="$PROJECT_DIR$/ga_nn/tensorflow_model.py" />
       </list>
     </option>
@@ -484,7 +474,14 @@
       <option name="project" value="LOCAL" />
       <updated>1471991111569</updated>
     </task>
-    <option name="localTasksCounter" value="2" />
+    <task id="LOCAL-00002" summary="tests pass committing before refactoring run()">
+      <created>1472008736221</created>
+      <option name="number" value="00002" />
+      <option name="presentableId" value="LOCAL-00002" />
+      <option name="project" value="LOCAL" />
+      <updated>1472008736221</updated>
+    </task>
+    <option name="localTasksCounter" value="3" />
     <servers />
   </component>
   <component name="TestHistory">
@@ -537,7 +534,7 @@
       <window_info id="Event Log" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.33" sideWeight="0.5" order="7" side_tool="true" content_ui="tabs" />
       <window_info id="Python Console" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.33" sideWeight="0.5" order="7" side_tool="false" content_ui="tabs" />
       <window_info id="Version Control" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.32941177" sideWeight="0.5" order="7" side_tool="false" content_ui="tabs" />
-      <window_info id="Run" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="true" show_stripe_button="true" weight="0.3529412" sideWeight="0.5" order="2" side_tool="false" content_ui="tabs" />
+      <window_info id="Run" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="true" show_stripe_button="true" weight="0.10147059" sideWeight="0.5" order="2" side_tool="false" content_ui="tabs" />
       <window_info id="Structure" active="false" anchor="left" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.25" sideWeight="0.5" order="1" side_tool="false" content_ui="tabs" />
       <window_info id="Terminal" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.33" sideWeight="0.5" order="7" side_tool="false" content_ui="tabs" />
       <window_info id="Favorites" active="false" anchor="left" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.33" sideWeight="0.5" order="2" side_tool="true" content_ui="tabs" />
@@ -564,7 +561,8 @@
   </component>
   <component name="VcsManagerConfiguration">
     <MESSAGE value="testing commit" />
-    <option name="LAST_COMMIT_MESSAGE" value="testing commit" />
+    <MESSAGE value="tests pass committing before refactoring run()" />
+    <option name="LAST_COMMIT_MESSAGE" value="tests pass committing before refactoring run()" />
   </component>
   <component name="XDebuggerManager">
     <breakpoint-manager />
@@ -637,7 +635,7 @@
         <state relative-caret-position="330">
           <caret line="40" column="47" selection-start-line="40" selection-start-column="47" selection-end-line="40" selection-end-column="47" />
           <folding>
-            <element signature="e#0#29#0" expanded="true" />
+            <element signature="e#0#29#0" expanded="false" />
           </folding>
         </state>
       </provider>
@@ -647,7 +645,7 @@
         <state relative-caret-position="292">
           <caret line="44" column="38" selection-start-line="44" selection-start-column="38" selection-end-line="44" selection-end-column="38" />
           <folding>
-            <element signature="e#0#29#0" expanded="true" />
+            <element signature="e#0#29#0" expanded="false" />
           </folding>
         </state>
       </provider>
@@ -657,7 +655,7 @@
         <state relative-caret-position="480">
           <caret line="41" column="36" selection-start-line="41" selection-start-column="36" selection-end-line="41" selection-end-column="36" />
           <folding>
-            <element signature="e#0#29#0" expanded="true" />
+            <element signature="e#0#29#0" expanded="false" />
           </folding>
         </state>
       </provider>
@@ -667,7 +665,7 @@
         <state relative-caret-position="0">
           <caret line="0" column="0" selection-start-line="0" selection-start-column="0" selection-end-line="0" selection-end-column="0" />
           <folding>
-            <element signature="e#0#29#0" expanded="true" />
+            <element signature="e#0#29#0" expanded="false" />
           </folding>
         </state>
       </provider>
@@ -677,7 +675,7 @@
         <state relative-caret-position="210">
           <caret line="14" column="33" selection-start-line="14" selection-start-column="33" selection-end-line="14" selection-end-column="33" />
           <folding>
-            <element signature="e#0#29#0" expanded="true" />
+            <element signature="e#0#29#0" expanded="false" />
           </folding>
         </state>
       </provider>
@@ -687,17 +685,7 @@
         <state relative-caret-position="315">
           <caret line="42" column="113" selection-start-line="42" selection-start-column="113" selection-end-line="42" selection-end-column="113" />
           <folding>
-            <element signature="e#0#29#0" expanded="true" />
-          </folding>
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/ga_nn/tests/test_remove_dense_layer.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="660">
-          <caret line="44" column="112" selection-start-line="44" selection-start-column="112" selection-end-line="44" selection-end-column="112" />
-          <folding>
-            <element signature="e#0#29#0" expanded="true" />
+            <element signature="e#0#29#0" expanded="false" />
           </folding>
         </state>
       </provider>
@@ -710,12 +698,12 @@
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/ga_nn/class_defs.py">
+    <entry file="file://$PROJECT_DIR$/ga_nn/tests/test_remove_dense_layer.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="-15">
-          <caret line="11" column="41" selection-start-line="11" selection-start-column="30" selection-end-line="11" selection-end-column="41" />
+        <state relative-caret-position="660">
+          <caret line="44" column="112" selection-start-line="44" selection-start-column="112" selection-end-line="44" selection-end-column="112" />
           <folding>
-            <element signature="e#0#52#0" expanded="true" />
+            <element signature="e#0#29#0" expanded="true" />
           </folding>
         </state>
       </provider>
@@ -732,10 +720,20 @@
     </entry>
     <entry file="file://$PROJECT_DIR$/ga_nn/tensorflow_model.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="630">
-          <caret line="45" column="16" selection-start-line="45" selection-start-column="16" selection-end-line="45" selection-end-column="16" />
+        <state relative-caret-position="331">
+          <caret line="123" column="68" selection-start-line="123" selection-start-column="68" selection-end-line="123" selection-end-column="68" />
           <folding>
             <element signature="e#0#23#0" expanded="true" />
+          </folding>
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/ga_nn/class_defs.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="60">
+          <caret line="4" column="0" selection-start-line="4" selection-start-column="0" selection-end-line="4" selection-end-column="0" />
+          <folding>
+            <element signature="e#0#52#0" expanded="true" />
           </folding>
         </state>
       </provider>

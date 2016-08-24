@@ -5,184 +5,129 @@ from ga_nn.class_defs import *
 
 class TensorflowModel(object):
 
-	def __init__(self):
-		# variables to optimize in current run
-		# variable values to save after run complete
+	def __init__(self, model, training_parameters):
 
-		# TODO separate method for test
+		self.model = model
+		self.training_parameters = None
+		self.train_mode = False
+		self.variables_to_save = {}
+		self.variables_to_train = []
+		self.model_summary = ModelSummary()
 
-	def run_model(self, dataset, model, training_parameters):
 
-		convolutional_layers = model.convolutional_layers
-		dense_layers = model.dense_layers
-		image_shape = model.image_shape
-		classes = model.classes
-		training_set_size = training_parameters.training_set_size
-		batch_size = training_parameters.batch_size
+	def run_model(self, dataset, train_test_input):
 
-		layers_to_train = training_parameters.layers_to_train
-		saved_parameters = training_parameters.saved_parameters
-		compute_iterations = training_parameters.iterations
+		convolutional_layers = self.model.convolutional_layers
+		dense_layers = self.model.dense_layers
+		image_shape = self.model.image_shape
 
-		model_summary = ModelSummary()
+		if self.train_mode(train_test_input):
+			self.training_parameters = train_test_input
+			self.saved_parameters = self.training_parameters.saved_parameters
+			self.train_mode = True
 
-		variables_to_train = []
-		variables_to_save = {}
+			'''
+			training_set_size = training_parameters.training_set_size
+			batch_size = training_parameters.batch_size
+			layers_to_train = training_parameters.layers_to_train
+			saved_parameters = training_parameters.saved_parameters
+			compute_iterations = training_parameters.iterations
+			'''
 
 		with tf.Graph().as_default():
 
 			x = tf.placeholder(tf.float32, [None, np.prod(image_shape)], name='x')
-			y_ =  tf.placeholder(tf.float32, [None, classes])
-			height, width, channels = image_shape
+			y_ =  tf.placeholder(tf.float32, [None, self.model.classes])
+			height, width, channels = self.image_shape
 			x = tf.reshape(x, shape=[-1, height, width, channels])
 
-			current_tensor = x
-			previous_output_shape = image_shape
-			previous_output_size = channels
+			input = x
 
 			# TODO refactor so that common code is shared
             # TODO needs to save output size for layer in case more conv layers appended
 			for layer in convolutional_layers:
+				input = self.apply_convolution(layer, input)
 
-				stddev = np.sqrt(2.0 / np.prod(previous_output_shape))
-				kernel_shape = [layer.filter_size, layer.filter_size, previous_output_size, layer.filters]
-
-				model_summary.filters.append(layer.filter_size)
-				model_summary.input_channels.append(previous_output_size)
-
-				W, b = self.get_weights_biases(kernel_shape, layer, stddev)
-				variables_to_save[layer.name+'_W'] = W
-				variables_to_save[layer.name+'_b'] = b
-				current_tensor = tf.nn.relu(tf.nn.bias_add(
-					tf.nn.conv2d(current_tensor, W, strides=[1, 1, 1, 1], padding='SAME'), b))
-
-				previous_output_shape = self.get_tensor_shape(current_tensor)
-				previous_output_size = previous_output_shape[-1]
-				layer.output_shape = previous_output_shape # record the output of this layer
-
-
-				if layer.name in layers_to_train:
-					variables_to_train.append(W)
-					variables_to_train.append(b)
-
-
-			current_tensor = tf.reshape(current_tensor, [-1, self.get_tensor_shape(current_tensor)])
+				input = tf.reshape(input, [-1, np.prod(self.get_tensor_shape(input))]) #reshape before dense layers
 
 			for layer in dense_layers:
-
-				previous_output_shape = self.get_tensor_shape(current_tensor)
-				previous_output_size = previous_output_shape[-1]
-
-				stddev = np.sqrt(2.0 / np.prod(layer.previous_output_shape))
-				shape = [previous_output_size, layer.hidden_units]
-
-				W, b = self.get_weights_biases(shape, layer, stddev)
-				variables_to_save[layer.name+'_W'] = W
-				variables_to_save[layer.name+'_b'] = b
-				current_tensor = tf.nn.relu(tf.nn.bias_add(tf.matmul(current_tensor, W), b)) #regularize
-
-			if layer.name in layers_to_train:
-					variables_to_train.append(W)
-					variables_to_train.append(b)
-
-
+				input = self.apply_dense_pass(layer, input)
 
 			# logits
-			layer = model.logits
-			previous_output_shape = self.get_tensor_shape(current_tensor)
-			previous_output_size = previous_output_shape[-1]
-
-
-			stddev = np.sqrt(2.0 / np.prod(layer.previous_output_shape))
-			shape = [previous_output_size, classes]
-			W, b = self.get_weights_biases(shape, layer, stddev)
-			variables_to_save[layer.name +'_W'] = W
-			variables_to_save[layer.name + '_b'] = b
-
-			if layer.name in layers_to_train:
-				variables_to_train.append(W)
-				variables_to_train.append(b)
-
-			logits = tf.nn.relu(tf.nn.bias_add(tf.matmul(current_tensor, W), b))
-
-
-
-			cross_entropy = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits(logits, y_))
-
-			tf.add_to_collection('losses', cross_entropy)
-			loss = tf.add_n(tf.get_collection('losses'))
-
-			# can be modified to have multiple optimizers per layer (check stackoverflow)
-			opt = tf.train.GradientDescentOptimizer(training_parameters.learning_rate)
-
-			gradients = tf.gradients(loss, variables_to_train)
-			train_op = opt.apply_gradients(zip(gradients, variables_to_train))
-			# train_op = tf.group(train_op1, train_op2)
+			layer = self.model.logits
+			logits = self.apply_convolution(layer, input)
 
 			accuracy = tf.reduce_mean(tf.cast(tf.equal(tf.argmax(logits, 1), tf.argmax(y_, 1)), tf.float32))
+
+			if self.train_mode:
+				cross_entropy = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits(logits, y_))
+				tf.add_to_collection('losses', cross_entropy)
+				loss = tf.add_n(tf.get_collection('losses'))
+				# can be modified to have multiple optimizers per layer (check stackoverflow)
+				opt = tf.train.GradientDescentOptimizer(self.training_parameters.learning_rate)
+
+				gradients = tf.gradients(loss, variables_to_train)
+				train_op = opt.apply_gradients(zip(gradients, variables_to_train))
+				# train_op = tf.group(train_op1, train_op2)
 
 			# Build an initialization operation to run below.
 			init = tf.initialize_all_variables()
 
-			# Start running operations on the Graph.
-
-
 			with tf.Session() as sess:
 				sess.run(init)
+				if self.train_mode:
+					batch_size = self.training_parameters.batch_sise
+					number_of_params_to_train = self.compute_number_of_parameters(variables_to_train)
 
-				number_of_params_to_train = self.compute_number_of_parameters(variables_to_train)
+					max_epohs = self.training_parameters.iterations(number_of_params_to_train)
+					max_batches = int(self.training_parameters.training_set_size / batch_size) * max_epohs
 
-				max_epohs = compute_iterations(number_of_params_to_train)
-				max_batches = int(training_set_size/batch_size)*max_epohs
+					step = 0
 
-				step = 0
+					print('Training')
+					while step < max_batches:
+						try:
+							batch_xs, batch_y = dataset.next_batch(batch_size)
+							feed_dict = {y_:batch_y, x:batch_xs}
+							_, loss_value = sess.run([train_op, loss], feed_dict=feed_dict)
 
-				print "Training"
-				while step < max_batches:
-					try:
-						batch_xs, batch_y = dataset.next_batch(batch_size)
-						feed_dict = {y_:batch_y, x:batch_xs}
-						_, loss_value = sess.run([train_op, loss], feed_dict=feed_dict)
+							self.check_nan(loss_value)
+							step += 1
+						except Exception as e:
+							self.model.name = None
+							return False, {'model': self.model, 'training_parameters': self.training_parameters,
+										   'error': e}
+					# Generate validation metric
+					val_xs, val_y = dataset.X_val, dataset.y_val
+					feed_dict = {y_:val_y, x: val_xs}
+					validation_accuracy = sess.run(accuracy, feed_dict=feed_dict)
 
-						self.check_nan(loss_value)
-						step += 1
-					except Exception as e:
-						model.name = None
-						return False, {'model': model, 'training_parameters': training_parameters, 'error': e}
-
-				# Generate validation metric
-
-				val_xs, val_y = dataset.X_val, dataset.y_val
-				feed_dict = {y_:val_y, x: val_xs}
-				validation_accuracy = sess.run(accuracy, feed_dict=feed_dict)
-
-				# Save layers
-				new_saved_parameters = {}
-
-				# TODO trying to not use separate data structure
-				for layer in convolutional_layers + dense_layers +[logits]:
-					W = variables_to_save[layer.name + '_W']
-					b = variables_to_save[layer.name + '_b']
-
-					layer_parameters = ModelLayerParameters(W.eval(), b.eval())
-					new_saved_parameters[layer.name] = layer_parameters
-
-					if layer.name in layers_to_train:
-						layer.training_history[model.generation] = max_epohs
+					# Save layers
+					new_saved_parameters = {}
+					for layer in convolutional_layers + dense_layers +[self.model.logits]:
+						W = self.variables_to_save[layer.name + '_W']
+						b = self.variables_to_save[layer.name + '_b']
+						layer_parameters = ModelLayerParameters(W.eval(), b.eval())
+						new_saved_parameters[layer.name] = layer_parameters
+						if layer.name in self.layers_to_train:
+							layer.training_history[self.model.generation] = max_epohs
 
 
-				# Update model summary with information
-				model_summary.validation_accuracy = validation_accuracy
-				model_summary.number_of_trained_layers = len(layers_to_train)
-				model_summary.number_of_trained_parameters = len(layers_to_train)
-				model_summary.layer_counts = (len(convolutional_layers), len(dense_layers))
-				model_summary.number_of_trained_parameters = number_of_params_to_train
-				model_summary.number_of_parameters = self.compute_number_of_parameters(tf.trainable_variables())
+					# Update model summary with information
+					self.model_summary.validation_accuracy = validation_accuracy
+					self.model_summary.number_of_trained_layers = len(self.layers_to_train)
+					self.model_summary.layer_counts = (len(convolutional_layers), len(dense_layers))
+					self.model_summary.number_of_trained_parameters = number_of_params_to_train
+					self.model_summary.number_of_parameters = self.compute_number_of_parameters(tf.trainable_variables())
 
+					return True, self.model, new_saved_parameters, self.model_summary
+				else: #TODO need to pass in saved params for testing
+					# Generate test metric
+					test_xs, test_y = dataset.X_test, dataset.y_test
+					feed_dict = {y_: test_y, x: test_xs}
+					test_accuracy = sess.run(accuracy, feed_dict=feed_dict)
+					return test_accuracy
 
-			# TODO neesd to return training params that include info for all new layers, even not trained layers
-			# TODO needs to return the dims of the conv layers
-			return True, model, layer_parameters, model_summary
 
 
 
@@ -204,18 +149,66 @@ class TensorflowModel(object):
 	def compute_number_of_parameters(self, collection):
 		return sum([np.prod(self.get_tensor_shape(tensor)) for tensor in collection])
 
+
+	def apply_convolution(self, layer, input_tensor):
+
+		input_shape = self.get_tensor_shape(input_tensor)
+		input_size = input_shape[-1]
+
+		stddev = np.sqrt(2.0 / np.prod(input_shape))
+		kernel_shape = [layer.filter_size, layer.filter_size, input_size, layer.filters]
+		W, b = self.get_weights_biases(kernel_shape, layer, stddev)
+		output = tf.nn.relu(tf.nn.bias_add(
+			tf.nn.conv2d(input_tensor, W, strides=[1, 1, 1, 1], padding='SAME'), b))
+
+		output_shape = self.get_tensor_shape(output)  # maybe do this after cuz it's in saved
+
+		if self.train_mode:
+			self.model_summary.filters.append(layer.filter_size)
+			self.model_summary.input_channels.append(input_size)
+			layer.output_shape = output_shape
+			self.add_variables_to_collections(layer.name, W, b)
+
+
+		return output
+
+	def apply_dense_pass(self, layer, input_tensor):
+
+		input_shape = self.get_tensor_shape(input_tensor)
+		input_size = input_shape[-1]
+
+		stddev = np.sqrt(2.0 / np.prod(layer.previous_output_shape))
+		shape = [input_size, layer.hidden_units]
+
+		W, b = self.get_weights_biases(shape, layer, stddev)
+		output = tf.nn.relu(tf.nn.bias_add(tf.matmul(input_tensor, W), b))  # regularize
+
+		if self.train_mode:
+			self.add_variables_to_collections(layer.name, W, b)
+		return output
+
+
+	def add_variables_to_collections(self, name, W, b):
+		self.variables_to_save[name + '_W'] = W
+		self.variables_to_save[name + '_b'] = b
+		if name in self.training_parameters.layers_to_train:
+			self.variables_to_train.append(W)
+			self.variables_to_train.append(b)
+
+
 	def get_weights_biases(self, shape, layer, stddev):
 
-
-
-
-		if layer.weights: #if there's already weights 
-			W = tf.Variable(layer.weights, name=layer.name + '_W', trainable=True)
-			b = tf.Variable(layer.biases, name=layer.name + '_b', trainable=True)
-		else:
+		if layer.name in self.saved_parameters: #if there's already weights
+			layer_parameters = self.saved_parameters[layer.name]
+			W = tf.Variable(layer_parameters.weights, name=layer.name + '_W', trainable=True)
+			b = tf.Variable(layer_parameters.biases, name=layer.name + '_b', trainable=True)
+		elif self.test_mode:
 			W = tf.Variable(tf.trucated_normal(shape, stddev=stddev), name=layer.name + '_W', trainable=True)
 			b = tf.Variable(tf.zeros(shape[-1]), name = layer.name + '_b', trainable=True)
-
+		else:
+			raise ValueError('No weights provided for %s layer %s' %(self.model, layer.name))
 		return W, b
 
 
+	def train_mode(train_test_input):
+		return train_test_input.__class__.__name__ == 'TrainingParameters'
