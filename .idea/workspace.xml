@@ -2,9 +2,17 @@
 <project version="4">
   <component name="ChangeListManager">
     <list default="true" id="189977df-d16c-4fe1-bf4d-545adba3a93e" name="Default" comment="">
+      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/ga_nn/tests/test_tensorflowModel.py" />
       <change type="MODIFICATION" beforePath="$PROJECT_DIR$/.idea/workspace.xml" afterPath="$PROJECT_DIR$/.idea/workspace.xml" />
       <change type="MODIFICATION" beforePath="$PROJECT_DIR$/ga_nn/class_defs.py" afterPath="$PROJECT_DIR$/ga_nn/class_defs.py" />
+      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/ga_nn/defaults.py" afterPath="$PROJECT_DIR$/ga_nn/defaults.py" />
       <change type="MODIFICATION" beforePath="$PROJECT_DIR$/ga_nn/tensorflow_model.py" afterPath="$PROJECT_DIR$/ga_nn/tensorflow_model.py" />
+      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/ga_nn/tests/test_append_convolutional_layer.py" afterPath="$PROJECT_DIR$/ga_nn/tests/test_append_convolutional_layer.py" />
+      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/ga_nn/tests/test_append_dense_layer.py" afterPath="$PROJECT_DIR$/ga_nn/tests/test_append_dense_layer.py" />
+      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/ga_nn/tests/test_cross_models.py" afterPath="$PROJECT_DIR$/ga_nn/tests/test_cross_models.py" />
+      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/ga_nn/tests/test_remove_convolutional_layer.py" afterPath="$PROJECT_DIR$/ga_nn/tests/test_remove_convolutional_layer.py" />
+      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/ga_nn/tests/test_remove_dense_layer.py" afterPath="$PROJECT_DIR$/ga_nn/tests/test_remove_dense_layer.py" />
+      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/ga_nn/tournament.py" afterPath="$PROJECT_DIR$/ga_nn/tournament.py" />
     </list>
     <ignored path="cnn_ga.iws" />
     <ignored path=".idea/workspace.xml" />
@@ -28,8 +36,8 @@
       <file leaf-file-name="tensorflow_model.py" pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/ga_nn/tensorflow_model.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="331">
-              <caret line="123" column="68" selection-start-line="123" selection-start-column="68" selection-end-line="123" selection-end-column="68" />
+            <state relative-caret-position="-9">
+              <caret line="114" column="46" selection-start-line="114" selection-start-column="46" selection-end-line="114" selection-end-column="46" />
               <folding>
                 <element signature="e#0#23#0" expanded="true" />
               </folding>
@@ -37,21 +45,31 @@
           </provider>
         </entry>
       </file>
-      <file leaf-file-name="defaults.py" pinned="false" current-in-tab="false">
-        <entry file="file://$PROJECT_DIR$/ga_nn/defaults.py">
+      <file leaf-file-name="test_tensorflowModel.py" pinned="false" current-in-tab="false">
+        <entry file="file://$PROJECT_DIR$/ga_nn/tests/test_tensorflowModel.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="210">
-              <caret line="14" column="35" selection-start-line="14" selection-start-column="35" selection-end-line="14" selection-end-column="35" />
+            <state relative-caret-position="90">
+              <caret line="6" column="69" selection-start-line="6" selection-start-column="69" selection-end-line="6" selection-end-column="69" />
               <folding />
             </state>
           </provider>
         </entry>
       </file>
-      <file leaf-file-name="tournament.py" pinned="false" current-in-tab="false">
+      <file leaf-file-name="defaults.py" pinned="false" current-in-tab="false">
+        <entry file="file://$PROJECT_DIR$/ga_nn/defaults.py">
+          <provider selected="true" editor-type-id="text-editor">
+            <state relative-caret-position="438">
+              <caret line="36" column="75" selection-start-line="36" selection-start-column="75" selection-end-line="36" selection-end-column="75" />
+              <folding />
+            </state>
+          </provider>
+        </entry>
+      </file>
+      <file leaf-file-name="tournament.py" pinned="false" current-in-tab="true">
         <entry file="file://$PROJECT_DIR$/ga_nn/tournament.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="3405">
-              <caret line="227" column="71" selection-start-line="227" selection-start-column="56" selection-end-line="227" selection-end-column="71" />
+            <state relative-caret-position="780">
+              <caret line="52" column="53" selection-start-line="52" selection-start-column="53" selection-end-line="52" selection-end-column="53" />
               <folding>
                 <element signature="e#31#40#0" expanded="true" />
               </folding>
@@ -59,23 +77,11 @@
           </provider>
         </entry>
       </file>
-      <file leaf-file-name="test_remove_dense_layer.py" pinned="false" current-in-tab="false">
-        <entry file="file://$PROJECT_DIR$/ga_nn/tests/test_remove_dense_layer.py">
-          <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="660">
-              <caret line="44" column="112" selection-start-line="44" selection-start-column="112" selection-end-line="44" selection-end-column="112" />
-              <folding>
-                <element signature="e#0#29#0" expanded="true" />
-              </folding>
-            </state>
-          </provider>
-        </entry>
-      </file>
-      <file leaf-file-name="class_defs.py" pinned="false" current-in-tab="true">
+      <file leaf-file-name="class_defs.py" pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/ga_nn/class_defs.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="60">
-              <caret line="4" column="0" selection-start-line="4" selection-start-column="0" selection-end-line="4" selection-end-column="0" />
+            <state relative-caret-position="45">
+              <caret line="3" column="36" selection-start-line="3" selection-start-column="36" selection-end-line="3" selection-end-column="36" />
               <folding>
                 <element signature="e#0#52#0" expanded="true" />
               </folding>
@@ -91,16 +97,17 @@
   <component name="IdeDocumentHistory">
     <option name="CHANGED_PATHS">
       <list>
-        <option value="$PROJECT_DIR$/ga_nn/defaults.py" />
         <option value="$PROJECT_DIR$/ga_nn/tests/test_append_convolutional_layer.py" />
         <option value="$PROJECT_DIR$/ga_nn/tests/test_append_dense_layer.py" />
         <option value="$PROJECT_DIR$/ga_nn/tests/test_cross_models.py" />
         <option value="$PROJECT_DIR$/ga_nn/tests/test__model_to_string.py" />
         <option value="$PROJECT_DIR$/ga_nn/tests/test_remove_convolutional_layer.py" />
         <option value="$PROJECT_DIR$/ga_nn/tests/test_remove_dense_layer.py" />
-        <option value="$PROJECT_DIR$/ga_nn/tournament.py" />
         <option value="$PROJECT_DIR$/ga_nn/class_defs.py" />
+        <option value="$PROJECT_DIR$/ga_nn/defaults.py" />
+        <option value="$PROJECT_DIR$/ga_nn/tests/test_tensorflowModel.py" />
         <option value="$PROJECT_DIR$/ga_nn/tensorflow_model.py" />
+        <option value="$PROJECT_DIR$/ga_nn/tournament.py" />
       </list>
     </option>
   </component>
@@ -182,7 +189,7 @@
     </panes>
   </component>
   <component name="PropertiesComponent">
-    <property name="last_opened_file_path" value="$PROJECT_DIR$/../school/ms_project/ms_project" />
+    <property name="last_opened_file_path" value="$PROJECT_DIR$/ga_nn/tests" />
     <property name="settings.editor.selected.configurable" value="com.jetbrains.python.configuration.PyActiveSdkModuleConfigurable" />
     <property name="settings.editor.splitter.proportion" value="0.2" />
   </component>
@@ -191,51 +198,7 @@
       <recent name="$PROJECT_DIR$" />
     </key>
   </component>
-  <component name="RunManager" selected="Python tests.Unittests in tests">
-    <configuration default="false" name="Unittests in test_cross_models" type="tests" factoryName="Unittests" temporary="true" nameIsGenerated="true">
-      <option name="INTERPRETER_OPTIONS" value="" />
-      <option name="PARENT_ENVS" value="true" />
-      <envs />
-      <option name="SDK_HOME" value="" />
-      <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$/ga_nn/tests" />
-      <option name="IS_MODULE_SDK" value="true" />
-      <option name="ADD_CONTENT_ROOTS" value="true" />
-      <option name="ADD_SOURCE_ROOTS" value="true" />
-      <module name="cnn_ga" />
-      <option name="SCRIPT_NAME" value="$PROJECT_DIR$/ga_nn/tests/test_cross_models.py" />
-      <option name="CLASS_NAME" value="" />
-      <option name="METHOD_NAME" value="" />
-      <option name="FOLDER_NAME" value="" />
-      <option name="TEST_TYPE" value="TEST_SCRIPT" />
-      <option name="PATTERN" value="" />
-      <option name="USE_PATTERN" value="false" />
-      <option name="PUREUNITTEST" value="true" />
-      <option name="PARAMS" value="" />
-      <option name="USE_PARAM" value="false" />
-      <method />
-    </configuration>
-    <configuration default="false" name="Unittests in test_possible_cross_overs" type="tests" factoryName="Unittests" temporary="true" nameIsGenerated="true">
-      <option name="INTERPRETER_OPTIONS" value="" />
-      <option name="PARENT_ENVS" value="true" />
-      <envs />
-      <option name="SDK_HOME" value="" />
-      <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$/ga_nn/tests" />
-      <option name="IS_MODULE_SDK" value="true" />
-      <option name="ADD_CONTENT_ROOTS" value="true" />
-      <option name="ADD_SOURCE_ROOTS" value="true" />
-      <module name="cnn_ga" />
-      <option name="SCRIPT_NAME" value="$PROJECT_DIR$/ga_nn/tests/test_possible_cross_overs.py" />
-      <option name="CLASS_NAME" value="" />
-      <option name="METHOD_NAME" value="" />
-      <option name="FOLDER_NAME" value="" />
-      <option name="TEST_TYPE" value="TEST_SCRIPT" />
-      <option name="PATTERN" value="" />
-      <option name="USE_PATTERN" value="false" />
-      <option name="PUREUNITTEST" value="true" />
-      <option name="PARAMS" value="" />
-      <option name="USE_PARAM" value="false" />
-      <method />
-    </configuration>
+  <component name="RunManager" selected="Python tests.Unittests in tests (2)">
     <configuration default="false" name="Unittests in test_remove_convolutional_layer" type="tests" factoryName="Unittests" temporary="true" nameIsGenerated="true">
       <option name="INTERPRETER_OPTIONS" value="" />
       <option name="PARENT_ENVS" value="true" />
@@ -281,6 +244,50 @@
       <method />
     </configuration>
     <configuration default="false" name="Unittests in tests" type="tests" factoryName="Unittests" temporary="true" nameIsGenerated="true">
+      <option name="INTERPRETER_OPTIONS" value="" />
+      <option name="PARENT_ENVS" value="true" />
+      <envs />
+      <option name="SDK_HOME" value="" />
+      <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$/ga_nn/tests" />
+      <option name="IS_MODULE_SDK" value="true" />
+      <option name="ADD_CONTENT_ROOTS" value="true" />
+      <option name="ADD_SOURCE_ROOTS" value="true" />
+      <module name="cnn_ga" />
+      <option name="SCRIPT_NAME" value="" />
+      <option name="CLASS_NAME" value="" />
+      <option name="METHOD_NAME" value="" />
+      <option name="FOLDER_NAME" value="$PROJECT_DIR$/ga_nn/tests" />
+      <option name="TEST_TYPE" value="TEST_FOLDER" />
+      <option name="PATTERN" value="" />
+      <option name="USE_PATTERN" value="false" />
+      <option name="PUREUNITTEST" value="true" />
+      <option name="PARAMS" value="" />
+      <option name="USE_PARAM" value="false" />
+      <method />
+    </configuration>
+    <configuration default="false" name="Unittests in tests (1)" type="tests" factoryName="Unittests" temporary="true" nameIsGenerated="true">
+      <option name="INTERPRETER_OPTIONS" value="" />
+      <option name="PARENT_ENVS" value="true" />
+      <envs />
+      <option name="SDK_HOME" value="" />
+      <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$/ga_nn/tests" />
+      <option name="IS_MODULE_SDK" value="true" />
+      <option name="ADD_CONTENT_ROOTS" value="true" />
+      <option name="ADD_SOURCE_ROOTS" value="true" />
+      <module name="cnn_ga" />
+      <option name="SCRIPT_NAME" value="" />
+      <option name="CLASS_NAME" value="" />
+      <option name="METHOD_NAME" value="" />
+      <option name="FOLDER_NAME" value="$PROJECT_DIR$/ga_nn/tests" />
+      <option name="TEST_TYPE" value="TEST_FOLDER" />
+      <option name="PATTERN" value="" />
+      <option name="USE_PATTERN" value="false" />
+      <option name="PUREUNITTEST" value="true" />
+      <option name="PARAMS" value="" />
+      <option name="USE_PARAM" value="false" />
+      <method />
+    </configuration>
+    <configuration default="false" name="Unittests in tests (2)" type="tests" factoryName="Unittests" temporary="true" nameIsGenerated="true">
       <option name="INTERPRETER_OPTIONS" value="" />
       <option name="PARENT_ENVS" value="true" />
       <envs />
@@ -437,19 +444,19 @@
       <method />
     </configuration>
     <list size="5">
-      <item index="0" class="java.lang.String" itemvalue="Python tests.Unittests in test_cross_models" />
-      <item index="1" class="java.lang.String" itemvalue="Python tests.Unittests in test_possible_cross_overs" />
-      <item index="2" class="java.lang.String" itemvalue="Python tests.Unittests in test_remove_convolutional_layer" />
-      <item index="3" class="java.lang.String" itemvalue="Python tests.Unittests in test_remove_dense_layer" />
-      <item index="4" class="java.lang.String" itemvalue="Python tests.Unittests in tests" />
+      <item index="0" class="java.lang.String" itemvalue="Python tests.Unittests in test_remove_convolutional_layer" />
+      <item index="1" class="java.lang.String" itemvalue="Python tests.Unittests in test_remove_dense_layer" />
+      <item index="2" class="java.lang.String" itemvalue="Python tests.Unittests in tests" />
+      <item index="3" class="java.lang.String" itemvalue="Python tests.Unittests in tests (1)" />
+      <item index="4" class="java.lang.String" itemvalue="Python tests.Unittests in tests (2)" />
     </list>
     <recent_temporary>
       <list size="5">
-        <item index="0" class="java.lang.String" itemvalue="Python tests.Unittests in tests" />
-        <item index="1" class="java.lang.String" itemvalue="Python tests.Unittests in test_remove_dense_layer" />
-        <item index="2" class="java.lang.String" itemvalue="Python tests.Unittests in test_remove_convolutional_layer" />
-        <item index="3" class="java.lang.String" itemvalue="Python tests.Unittests in test_possible_cross_overs" />
-        <item index="4" class="java.lang.String" itemvalue="Python tests.Unittests in test_cross_models" />
+        <item index="0" class="java.lang.String" itemvalue="Python tests.Unittests in tests (2)" />
+        <item index="1" class="java.lang.String" itemvalue="Python tests.Unittests in tests (1)" />
+        <item index="2" class="java.lang.String" itemvalue="Python tests.Unittests in test_remove_dense_layer" />
+        <item index="3" class="java.lang.String" itemvalue="Python tests.Unittests in tests" />
+        <item index="4" class="java.lang.String" itemvalue="Python tests.Unittests in test_remove_convolutional_layer" />
       </list>
     </recent_temporary>
   </component>
@@ -481,22 +488,17 @@
       <option name="project" value="LOCAL" />
       <updated>1472008736221</updated>
     </task>
-    <option name="localTasksCounter" value="3" />
+    <task id="LOCAL-00003" summary="refactored run() in tensorflow model">
+      <created>1472013267777</created>
+      <option name="number" value="00003" />
+      <option name="presentableId" value="LOCAL-00003" />
+      <option name="project" value="LOCAL" />
+      <updated>1472013267777</updated>
+    </task>
+    <option name="localTasksCounter" value="4" />
     <servers />
   </component>
   <component name="TestHistory">
-    <history-entry file="Unittests_in_test_append_convolutional_layer - 2016.08.23 at 19h 16m 51s.xml">
-      <configuration name="Unittests in test_append_convolutional_layer" configurationId="tests" />
-    </history-entry>
-    <history-entry file="Unittests_in_test_append_dense_layer - 2016.08.23 at 19h 21m 33s.xml">
-      <configuration name="Unittests in test_append_dense_layer" configurationId="tests" />
-    </history-entry>
-    <history-entry file="Unittests_in_test_cross_models - 2016.08.23 at 19h 29m 16s.xml">
-      <configuration name="Unittests in test_cross_models" configurationId="tests" />
-    </history-entry>
-    <history-entry file="Unittests_in_test_cross_models - 2016.08.23 at 19h 30m 36s.xml">
-      <configuration name="Unittests in test_cross_models" configurationId="tests" />
-    </history-entry>
     <history-entry file="Unittests_in_test_cross_models - 2016.08.23 at 19h 38m 50s.xml">
       <configuration name="Unittests in test_cross_models" configurationId="tests" />
     </history-entry>
@@ -512,8 +514,20 @@
     <history-entry file="Unittests_in_test_remove_dense_layer - 2016.08.23 at 19h 52m 06s.xml">
       <configuration name="Unittests in test_remove_dense_layer" configurationId="tests" />
     </history-entry>
+    <history-entry file="Unittests_in_test_remove_dense_layer - 2016.08.23 at 21h 39m 11s.xml">
+      <configuration name="Unittests in test_remove_dense_layer" configurationId="tests" />
+    </history-entry>
+    <history-entry file="Unittests_in_test_remove_dense_layer - 2016.08.23 at 21h 39m 51s.xml">
+      <configuration name="Unittests in test_remove_dense_layer" configurationId="tests" />
+    </history-entry>
     <history-entry file="Unittests_in_tests - 2016.08.23 at 19h 52m 15s.xml">
       <configuration name="Unittests in tests" configurationId="tests" />
+    </history-entry>
+    <history-entry file="Unittests_in_tests_(1) - 2016.08.23 at 21h 40m 35s.xml">
+      <configuration name="Unittests in tests (1)" configurationId="tests" />
+    </history-entry>
+    <history-entry file="Unittests_in_tests_(2) - 2016.08.23 at 21h 47m 57s.xml">
+      <configuration name="Unittests in tests (2)" configurationId="tests" />
     </history-entry>
   </component>
   <component name="TodoView" selected-index="1">
@@ -534,7 +548,7 @@
       <window_info id="Event Log" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.33" sideWeight="0.5" order="7" side_tool="true" content_ui="tabs" />
       <window_info id="Python Console" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.33" sideWeight="0.5" order="7" side_tool="false" content_ui="tabs" />
       <window_info id="Version Control" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.32941177" sideWeight="0.5" order="7" side_tool="false" content_ui="tabs" />
-      <window_info id="Run" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="true" show_stripe_button="true" weight="0.10147059" sideWeight="0.5" order="2" side_tool="false" content_ui="tabs" />
+      <window_info id="Run" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="true" show_stripe_button="true" weight="0.18235295" sideWeight="0.5" order="2" side_tool="false" content_ui="tabs" />
       <window_info id="Structure" active="false" anchor="left" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.25" sideWeight="0.5" order="1" side_tool="false" content_ui="tabs" />
       <window_info id="Terminal" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.33" sideWeight="0.5" order="7" side_tool="false" content_ui="tabs" />
       <window_info id="Favorites" active="false" anchor="left" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.33" sideWeight="0.5" order="2" side_tool="true" content_ui="tabs" />
@@ -562,7 +576,8 @@
   <component name="VcsManagerConfiguration">
     <MESSAGE value="testing commit" />
     <MESSAGE value="tests pass committing before refactoring run()" />
-    <option name="LAST_COMMIT_MESSAGE" value="tests pass committing before refactoring run()" />
+    <MESSAGE value="refactored run() in tensorflow model" />
+    <option name="LAST_COMMIT_MESSAGE" value="refactored run() in tensorflow model" />
   </component>
   <component name="XDebuggerManager">
     <breakpoint-manager />
@@ -690,14 +705,6 @@
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/ga_nn/defaults.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="210">
-          <caret line="14" column="35" selection-start-line="14" selection-start-column="35" selection-end-line="14" selection-end-column="35" />
-          <folding />
-        </state>
-      </provider>
-    </entry>
     <entry file="file://$PROJECT_DIR$/ga_nn/tests/test_remove_dense_layer.py">
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="660">
@@ -708,32 +715,48 @@
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/ga_nn/tournament.py">
+    <entry file="file://$PROJECT_DIR$/ga_nn/class_defs.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="3405">
-          <caret line="227" column="71" selection-start-line="227" selection-start-column="56" selection-end-line="227" selection-end-column="71" />
+        <state relative-caret-position="45">
+          <caret line="3" column="36" selection-start-line="3" selection-start-column="36" selection-end-line="3" selection-end-column="36" />
           <folding>
-            <element signature="e#31#40#0" expanded="true" />
+            <element signature="e#0#52#0" expanded="true" />
           </folding>
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/ga_nn/defaults.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="438">
+          <caret line="36" column="75" selection-start-line="36" selection-start-column="75" selection-end-line="36" selection-end-column="75" />
+          <folding />
         </state>
       </provider>
     </entry>
     <entry file="file://$PROJECT_DIR$/ga_nn/tensorflow_model.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="331">
-          <caret line="123" column="68" selection-start-line="123" selection-start-column="68" selection-end-line="123" selection-end-column="68" />
+        <state relative-caret-position="-9">
+          <caret line="114" column="46" selection-start-line="114" selection-start-column="46" selection-end-line="114" selection-end-column="46" />
           <folding>
             <element signature="e#0#23#0" expanded="true" />
           </folding>
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/ga_nn/class_defs.py">
+    <entry file="file://$PROJECT_DIR$/ga_nn/tests/test_tensorflowModel.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="60">
-          <caret line="4" column="0" selection-start-line="4" selection-start-column="0" selection-end-line="4" selection-end-column="0" />
+        <state relative-caret-position="90">
+          <caret line="6" column="69" selection-start-line="6" selection-start-column="69" selection-end-line="6" selection-end-column="69" />
+          <folding />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/ga_nn/tournament.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="780">
+          <caret line="52" column="53" selection-start-line="52" selection-start-column="53" selection-end-line="52" selection-end-column="53" />
           <folding>
-            <element signature="e#0#52#0" expanded="true" />
+            <element signature="e#31#40#0" expanded="true" />
           </folding>
         </state>
       </provider>

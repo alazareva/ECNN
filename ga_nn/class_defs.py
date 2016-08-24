@@ -1,12 +1,12 @@
 from namedlist import namedlist, FACTORY, NO_DEFAULT
 from ga_nn.defaults import  *
 
-Logits = namedlist('Logits', [('name', 'logits'), ('hidden_units', NUM_CLASSES)],  se_slots=True, default=None)
+OutputLayer = namedlist('OutputLayer', [('name', 'logits'), ('hidden_units', NUM_CLASSES)], use_slots=True, default=None)
 
 Model = namedlist('Model', [('generation', NO_DEFAULT),
 							('convolutional_layers', FACTORY(list)),
 							('dense_layers', FACTORY(list)),
-							('logits', Logits()),
+							('logits', OutputLayer()),
 							('name', NO_DEFAULT),
 							('ancestor', NO_DEFAULT),
 							('image_shape', IMAGE_SHAPE),
@@ -33,4 +33,4 @@ TrainingParameters = namedlist('TrainingParameters', [('training_set_size', NO_D
 													  ('learning_rate', LEARNING_RATE),
 													  ('saved_parameters', FACTORY(dict))], default=None)
 
-ModelLayerParameters = namedlist('ModelLayerParameters', ['weights', 'biases'], default=None)
+LayerValues = namedlist('LayerValues', ['weights', 'biases'], default=None)

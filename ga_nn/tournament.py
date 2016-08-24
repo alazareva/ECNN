@@ -8,17 +8,8 @@ import random
 import itertools
 
 import numpy as np
-#from ga_nn.tensorflow_model import  TensorflowModel
 
-
-#from tensorflow_model import TensorflowModel
-
-# nice way to filter dict dict(zip(selected_list, [summaries[model] for model in selected_list]))
-
-# CRAZINESS how much randomness is allowed to happen, reusing convs from earlier layers
-
-# ZOMBIE : bring back models that were mutated away from earier generations
-
+from ga_nn.tensorflow_model import  TensorflowModel
 from ga_nn.class_defs import  *
 
 # TODO use coverage testing
@@ -35,14 +26,14 @@ def run():
 
 		model_summaries = {}
 		population = 0
-		#TODO what if this crashes
+		# TODO fix confusion between parameters and values for layers only values
 		while population < POPULATION:
-			model, training_parameters = models_params.next()
-			model.generation = CURRENT_GENERATION
-			tf_model = TensorflowModel()
-			success, *reports = tf_model.run(DATASET ,model, training_parameters)
-			if success:
-				trained_model, layer_parameters, summary = reports
+			# should be saved
+			try:
+				model, training_parameters = models_params.next()
+				model.generation = CURRENT_GENERATION
+				tf_model = TensorflowModel(model)
+				trained_model, layer_parameters, summary = tf_model.run(DATASET, training_parameters)
 				model_name = '%d_%d' %(generation, population)
 				trained_model.name = model_name
 				print('model, accuracy:', model_name, summary.validation_accuracy)
@@ -55,9 +46,8 @@ def run():
 				with open(params_path, 'w') as params_file:
 					pickle.dump(layer_parameters, params_file)
 				population += 1
-			else:
-				error_logs.append(reports)
-
+			except Exception as e:
+				error_logs.append({'%d_%d'%(generation, population): str(e)})
 		# TODO save report periodically so that it can be loaded if crash happens
 		summary_path = os.path.join(DIR, generation, 'summary.p')
 		with open(summary_path, 'w') as summary_file:
@@ -72,7 +62,8 @@ def run():
 		pickle.dump(tournament_report, report_path)
 	errors_path = os.path.join(DIR, 'errors.p')
 	with open(report_path, 'w') as errors_file:
-		pickle.dump(errors, errors_file)
+		pickle.dump(error_logs, errors_file)
+
 	# TODO write test code to run test stats on final 5 models
 
 
@@ -92,9 +83,9 @@ def generate_initial_population():
 	layer = ConvolutionalLayer(filter_size=filter_size, filters=filters, name='c0')
 	layers_to_train.append('c0')
 
-	logits = Logits()
+	logits = OutputLayer()
 	layers_to_train.append('logits')
-	model = Model(convolutional_layers=[layer],logitslogits=, image_shape=IMAGE_SHAPE, clasees=NUM_CLASSES)
+	model = Model(convolutional_layers=[layer],logits=logits, image_shape=IMAGE_SHAPE, clasees=NUM_CLASSES)
 	training_parameters = TrainingParameters(layers_to_train=layers_to_train, iterations=interations_function,
 											 learning_rate=LEARNING_RATE)
 
@@ -103,8 +94,6 @@ def generate_initial_population():
 
 def generate_mutated_models(summaries):
 	# takes a string list of model names
-	# needs file paths
-	# first figure out if crossovers are possible
 
 	# keep track if cross over done
 	seen = set()
@@ -200,7 +189,7 @@ def cross_models(model_params1, model_params2, **muation_params):
 	new_biases = np.concatenate((layer_parameters1.biases, layer_parameters2.biases), axis=0)
 
 	model1.convolutional_layers[model1_layer_idx].filters = new_weights.shape[-1]
-	params1.saved_parameters[model1_layer.name] = ModelLayerParameters(weights=new_weights, biases=new_biases)
+	params1.saved_parameters[model1_layer.name] = LayerValues(weights=new_weights, biases=new_biases)
 	new_layer_index = model1_layer_idx + 1
 	model1.ancestor = (model1.name, model2.name)
 

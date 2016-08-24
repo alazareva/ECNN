@@ -8,7 +8,7 @@ class TestRemove_convolutional_layer(TestCase):
         c0 = ConvolutionalLayer(filter_size=5, filters=11, output_shape=[20, 20, 3], name='c0')
         c1 = ConvolutionalLayer(filter_size=5, filters=10, output_shape=[20, 20, 3], name='c1')
         d0 = DenseLayer(hidden_units=6, name='d0')
-        logits = Logits()
+        logits = OutputLayer()
 
         c0_expected = ConvolutionalLayer(filter_size=5, filters=11, output_shape=[20, 20, 3], name='c0')
         d0_expected = DenseLayer(hidden_units=6, name='d0')
@@ -29,7 +29,7 @@ def test_remove_convolutional_layer_first(self):
     c0 = ConvolutionalLayer(filter_size=5, filters=11, output_shape=[20, 20, 3], name='c0')
     c1 = ConvolutionalLayer(filter_size=5, filters=10, output_shape=[20, 20, 3], name='c1')
     d0 = DenseLayer(6, 'd0')
-    logits = Logits('logits')
+    logits = OutputLayer('logits')
 
     c0_expected = ConvolutionalLayer(filter_size=5, filters=10, output_shape=[20, 20, 3], name='c0')
     d0_expected = DenseLayer(6, 'd0')

@@ -8,7 +8,7 @@ class TestCross_models(TestCase):
         c0_1 = ConvolutionalLayer(filter_size=5, filters=3, output_shape=[20, 20, 3], name='c0')
         c0_2 = ConvolutionalLayer(filter_size=5, filters=2, output_shape=[20, 20, 3], name='c0')
 
-        logits = Logits()
+        logits = OutputLayer()
 
         model1 = Model(convolutional_layers=[c0_1], logits=logits, name='test1')
         model2 = Model(convolutional_layers=[c0_2], logits=logits, name='test2')
@@ -22,8 +22,8 @@ class TestCross_models(TestCase):
         expected_w = np.concatenate((w1, w2), axis=3)
         expected_b = np.concatenate((b1, b2), axis=0)
 
-        ml1 = ModelLayerParameters(weights=w1, biases=b1)
-        ml2 = ModelLayerParameters(weights=w2, biases=b2)
+        ml1 = LayerValues(weights=w1, biases=b1)
+        ml2 = LayerValues(weights=w2, biases=b2)
 
         mp1 = TrainingParameters(saved_parameters={'c0': ml1})
         mp2 = TrainingParameters(saved_parameters={'c0': ml2})
@@ -49,7 +49,7 @@ class TestCross_models(TestCase):
 
         c0_2 = ConvolutionalLayer(filter_size=6, filters=3, output_shape=[20, 20, 3], name='c0')
 
-        logits = Logits('logits')
+        logits = OutputLayer('logits')
 
         model1 = Model(convolutional_layers=[c0_1, c2_1], logits=logits, name='test1')
         model2 = Model(convolutional_layers=[c0_2], logits=logits, name='test2')
@@ -63,8 +63,8 @@ class TestCross_models(TestCase):
         expected_w = np.concatenate((w1, w2), axis=3)
         expected_b = np.concatenate((b1, b2), axis=0)
 
-        ml1 = ModelLayerParameters(weights=w1, biases=b1)
-        ml2 = ModelLayerParameters(weights=w2, biases=b2)
+        ml1 = LayerValues(weights=w1, biases=b1)
+        ml2 = LayerValues(weights=w2, biases=b2)
 
         mp1 = TrainingParameters(saved_parameters={'c0': None, 'c1': ml1})
         mp2 = TrainingParameters(saved_parameters={'c0': ml2})

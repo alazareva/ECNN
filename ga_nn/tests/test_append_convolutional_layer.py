@@ -7,7 +7,7 @@ class TestAppend_convolutional_layer(TestCase):
         from ga_nn.tournament import append_convolutional_layer
 
         c0 = ConvolutionalLayer(filter_size=5, filters=10, output_shape=[20, 20, 3], name='c0')
-        logits = Logits('logits')
+        logits = OutputLayer('logits')
 
         c0_expected = ConvolutionalLayer(filter_size=5, filters=10, output_shape=[20, 20, 3], name='c0')
         mutation_params = {'filter_size': 42, 'number_of_filters': 32}
@@ -27,7 +27,7 @@ class TestAppend_convolutional_layer(TestCase):
 
         c0 = ConvolutionalLayer(filter_size=5, filters=10, output_shape=[20, 20, 3], name='c0')
         d0 = DenseLayer(hidden_units=6, name='d0')
-        logits = Logits()
+        logits = OutputLayer()
 
         c0_expected = ConvolutionalLayer(filter_size=5, filters=10, output_shape=[20, 20, 3], name='c0')
         d0_expected = DenseLayer(6,'d0')
@@ -49,7 +49,7 @@ class TestAppend_convolutional_layer(TestCase):
         c0 = ConvolutionalLayer(filter_size=5, filters=10, output_shape=[20, 20, 3], name='c0')
         c1 = ConvolutionalLayer(filter_size=6, filters=4, output_shape=[2, 2, 30], name='c1')
         d0 = DenseLayer(hidden_units=6,name='d0')
-        logits = Logits()
+        logits = OutputLayer()
 
         c0_expected = ConvolutionalLayer(filter_size=5, filters=10, output_shape=[20, 20, 3], name='c0')
         c1_expected = ConvolutionalLayer(filter_size=6, filters=4, output_shape=[2, 2, 30], name='c1')

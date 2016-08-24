@@ -10,7 +10,7 @@ class TestRemove_dense_layer(TestCase):
         d0 = DenseLayer(hidden_units=40, name='d0')
         d1 = DenseLayer(hidden_units=42, name='d1')
 
-        logits = Logits('logits')
+        logits = OutputLayer('logits')
 
         c0_expected = ConvolutionalLayer(filter_size=5, filters=10, output_shape=[20, 20, 3], name='c0')
         d0_expected = DenseLayer(hidden_units=40, name='d0')
@@ -32,7 +32,7 @@ def test_remove_dense_layer_last(self):
     d0 = DenseLayer(hidden_units=40, name='d0')
     d1 = DenseLayer(hidden_units=42, name='d1')
 
-    logits = Logits('logits')
+    logits = OutputLayer('logits')
 
     c0_expected = ConvolutionalLayer(filter_size=5, filters=10, output_shape=[20, 20, 3], name='c0')
     d0_expected = DenseLayer(hidden_units=42, name='d0')

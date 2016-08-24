@@ -21,18 +21,10 @@ class TensorflowModel(object):
 		dense_layers = self.model.dense_layers
 		image_shape = self.model.image_shape
 
-		if self.train_mode(train_test_input):
+		if self.is_train_mode(train_test_input):
 			self.training_parameters = train_test_input
 			self.saved_parameters = self.training_parameters.saved_parameters
 			self.train_mode = True
-
-			'''
-			training_set_size = training_parameters.training_set_size
-			batch_size = training_parameters.batch_size
-			layers_to_train = training_parameters.layers_to_train
-			saved_parameters = training_parameters.saved_parameters
-			compute_iterations = training_parameters.iterations
-			'''
 
 		with tf.Graph().as_default():
 
@@ -43,8 +35,6 @@ class TensorflowModel(object):
 
 			input = x
 
-			# TODO refactor so that common code is shared
-            # TODO needs to save output size for layer in case more conv layers appended
 			for layer in convolutional_layers:
 				input = self.apply_convolution(layer, input)
 
@@ -86,29 +76,25 @@ class TensorflowModel(object):
 
 					print('Training')
 					while step < max_batches:
-						try:
-							batch_xs, batch_y = dataset.next_batch(batch_size)
-							feed_dict = {y_:batch_y, x:batch_xs}
-							_, loss_value = sess.run([train_op, loss], feed_dict=feed_dict)
+						batch_xs, batch_y = dataset.next_batch(batch_size)
+						feed_dict = {y_:batch_y, x:batch_xs}
+						_, loss_value = sess.run([train_op, loss], feed_dict=feed_dict)
 
-							self.check_nan(loss_value)
-							step += 1
-						except Exception as e:
-							self.model.name = None
-							return False, {'model': self.model, 'training_parameters': self.training_parameters,
-										   'error': e}
+						self.check_nan(loss_value)
+						step += 1
+
 					# Generate validation metric
 					val_xs, val_y = dataset.X_val, dataset.y_val
 					feed_dict = {y_:val_y, x: val_xs}
 					validation_accuracy = sess.run(accuracy, feed_dict=feed_dict)
 
 					# Save layers
-					new_saved_parameters = {}
+					new_values = {}
 					for layer in convolutional_layers + dense_layers +[self.model.logits]:
 						W = self.variables_to_save[layer.name + '_W']
 						b = self.variables_to_save[layer.name + '_b']
-						layer_parameters = ModelLayerParameters(W.eval(), b.eval())
-						new_saved_parameters[layer.name] = layer_parameters
+						layer_values = LayerValues(W.eval(), b.eval())
+						new_values[layer.name] = layer_values
 						if layer.name in self.layers_to_train:
 							layer.training_history[self.model.generation] = max_epohs
 
@@ -120,13 +106,13 @@ class TensorflowModel(object):
 					self.model_summary.number_of_trained_parameters = number_of_params_to_train
 					self.model_summary.number_of_parameters = self.compute_number_of_parameters(tf.trainable_variables())
 
-					return True, self.model, new_saved_parameters, self.model_summary
+					return True, self.model, new_values, self.model_summary
 				else: #TODO need to pass in saved params for testing
 					# Generate test metric
 					test_xs, test_y = dataset.X_test, dataset.y_test
 					feed_dict = {y_: test_y, x: test_xs}
-					test_accuracy = sess.run(accuracy, feed_dict=feed_dict)
-					return test_accuracy
+					test_accuracy, loss = sess.run([accuracy, loss], feed_dict=feed_dict)
+					return test_accuracy, loss
 
 
 
@@ -172,19 +158,25 @@ class TensorflowModel(object):
 
 		return output
 
-	def apply_dense_pass(self, layer, input_tensor):
+		#TODO add reguralization
+	def apply_dense_pass(self,layer, input_tensor):
+		logits = self.get_logits(layer, input_tensor)
+		output = tf.nn.relu(logits)  # regularize
+		return output
 
+
+	def get_logits(self, layer, input_tensor):
 		input_shape = self.get_tensor_shape(input_tensor)
 		input_size = input_shape[-1]
-
 		stddev = np.sqrt(2.0 / np.prod(layer.previous_output_shape))
 		shape = [input_size, layer.hidden_units]
 
 		W, b = self.get_weights_biases(shape, layer, stddev)
-		output = tf.nn.relu(tf.nn.bias_add(tf.matmul(input_tensor, W), b))  # regularize
+		output = tf.nn.bias_add(tf.matmul(input_tensor, W), b)  # regularize
 
 		if self.train_mode:
 			self.add_variables_to_collections(layer.name, W, b)
+
 		return output
 
 
@@ -210,5 +202,5 @@ class TensorflowModel(object):
 		return W, b
 
 
-	def train_mode(train_test_input):
+	def is_train_mode(train_test_input):
 		return train_test_input.__class__.__name__ == 'TrainingParameters'
