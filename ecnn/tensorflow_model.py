@@ -5,7 +5,7 @@ from ecnn.class_defs import *
 
 
 class TensorflowModel(object):
-    def __init__(self, model, training_parameters):
+    def __init__(self, model):
 
         self.model = model
         self.training_parameters = None
@@ -13,8 +13,9 @@ class TensorflowModel(object):
         self.variables_to_save = {}
         self.variables_to_train = []
         self.model_summary = ModelSummary()
+        self.saved_parameters = {}
 
-    def run_model(self, dataset, train_test_input):
+    def run(self, dataset, train_test_input):
 
         convolutional_layers = self.model.convolutional_layers
         dense_layers = self.model.dense_layers
@@ -30,33 +31,38 @@ class TensorflowModel(object):
             x = tf.placeholder(tf.float32, [None, np.prod(image_shape)], name='x')
             y_ = tf.placeholder(tf.float32, [None, self.model.classes])
             height, width, channels = self.model.image_shape
-            x = tf.reshape(x, shape=[-1, height, width, channels])
 
-            input = x
+
+            input_tensor = tf.reshape(x, shape=[-1, height, width, channels])
+
+            print('input_shapen', input_tensor.get_shape().as_list())
 
             for layer in convolutional_layers:
-                input = self.apply_convolution(layer, input)
+                print(layer.name, input_tensor.get_shape().as_list())
+                input_tensor = self.apply_convolution(layer, input_tensor)
 
-                input = tf.reshape(input, [-1, np.prod(self.get_tensor_shape(input))])  # reshape before dense layers
+            input_tensor = tf.reshape(input_tensor, [-1, np.prod(self.get_tensor_shape(input_tensor))])  # reshape before dense layers
 
             for layer in dense_layers:
-                input = self.apply_dense_pass(layer, input)
+                input_tensor = self.apply_dense_pass(layer, input_tensor)
 
             # logits
             layer = self.model.logits
-            logits = self.apply_convolution(layer, input)
+            logits = self.apply_dense_pass(layer, input_tensor)
 
             accuracy = tf.reduce_mean(tf.cast(tf.equal(tf.argmax(logits, 1), tf.argmax(y_, 1)), tf.float32))
 
             if self.train_mode:
+                print ("Train Mode")
                 cross_entropy = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits(logits, y_))
                 tf.add_to_collection('losses', cross_entropy)
                 loss = tf.add_n(tf.get_collection('losses'))
                 # can be modified to have multiple optimizers per layer (check stackoverflow)
-                opt = tf.train.GradientDescentOptimizer(self.training_parameters.learning_rate)
+                train_op = tf.train.GradientDescentOptimizer(self.training_parameters.learning_rate).minimize(loss,
+                                                                                var_list=self.variables_to_train)
 
-                gradients = tf.gradients(loss, self.variables_to_train)
-                train_op = opt.apply_gradients(zip(gradients, self.variables_to_train))
+                #gradients = tf.gradients(loss, self.variables_to_train)
+                #train_op = opt.apply_gradients(zip(gradients, self.variables_to_train))
                 # train_op = tf.group(train_op1, train_op2)
 
 
@@ -64,7 +70,7 @@ class TensorflowModel(object):
 
                 with tf.Session() as sess:
                     sess.run(init)
-                    batch_size = self.training_parameters.batch_sise
+                    batch_size = self.training_parameters.batch_size
                     number_of_params_to_train = self.compute_number_of_parameters(self.variables_to_train)
 
                     max_epohs = self.training_parameters.iterations(number_of_params_to_train)
@@ -93,18 +99,18 @@ class TensorflowModel(object):
                         b = self.variables_to_save[layer.name + '_b']
                         layer_values = LayerValues(W.eval(), b.eval())
                         new_values[layer.name] = layer_values
-                        if layer.name in self.layers_to_train:
+                        if layer.name in self.training_parameters.layers_to_train:
                             layer.training_history[self.model.generation] = max_epohs
 
                     # Update model summary with information
                     self.model_summary.validation_accuracy = validation_accuracy
-                    self.model_summary.number_of_trained_layers = len(self.layers_to_train)
+                    self.model_summary.number_of_trained_layers = len(self.training_parameters.layers_to_train)
                     self.model_summary.layer_counts = (len(convolutional_layers), len(dense_layers))
                     self.model_summary.number_of_trained_parameters = number_of_params_to_train
-                    self.model_summary.number_of_parameters = self.compute_number_of_parameters(
+                    self.model_summary.trainable_parameters = self.compute_number_of_parameters(
                         tf.trainable_variables())
 
-                    return True, self.model, new_values, self.model_summary
+                    return self.model, new_values, self.model_summary
 
 
             else: # TODO need to pass in saved params for testing
@@ -113,7 +119,7 @@ class TensorflowModel(object):
                     sess.run(init)
                     test_xs, test_y = dataset.X_test, dataset.y_test
                     feed_dict = {y_: test_y, x: test_xs}
-                    test_accuracy, loss = sess.run([accuracy, loss], feed_dict=feed_dict)
+                    test_accuracy, loss = sess.run([accuracy, loss_value], feed_dict=feed_dict)
                     return test_accuracy, loss
 
     def check_nan(self, loss_value):
@@ -163,7 +169,7 @@ class TensorflowModel(object):
     def get_logits(self, layer, input_tensor):
         input_shape = self.get_tensor_shape(input_tensor)
         input_size = input_shape[-1]
-        stddev = np.sqrt(2.0 / np.prod(layer.previous_output_shape))
+        stddev = np.sqrt(2.0 / np.prod(input_shape))
         shape = [input_size, layer.hidden_units]
 
         W, b = self.get_weights_biases(shape, layer, stddev)
@@ -178,6 +184,7 @@ class TensorflowModel(object):
         self.variables_to_save[name + '_W'] = W
         self.variables_to_save[name + '_b'] = b
         if name in self.training_parameters.layers_to_train:
+            print('adding %s to variables to train' % name)
             self.variables_to_train.append(W)
             self.variables_to_train.append(b)
 
@@ -188,11 +195,11 @@ class TensorflowModel(object):
             W = tf.Variable(layer_parameters.weights, name=layer.name + '_W', trainable=True)
             b = tf.Variable(layer_parameters.biases, name=layer.name + '_b', trainable=True)
         elif self.train_mode:
-            W = tf.Variable(tf.trucated_normal(shape, stddev=stddev), name=layer.name + '_W', trainable=True)
+            W = tf.Variable(tf.truncated_normal(shape, stddev=stddev), name=layer.name + '_W', trainable=True)
             b = tf.Variable(tf.zeros(shape[-1]), name=layer.name + '_b', trainable=True)
         else:
             raise ValueError('No weights provided for %s layer %s' % (self.model, layer.name))
         return W, b
 
     def is_train_mode(self, train_test_input):
-        return train_test_input.__class__.__name__ == 'TrainingParameters'
+        return train_test_input.__class__.__name__ == 'TrainingInstructions'

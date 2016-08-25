@@ -15,6 +15,7 @@ from ecnn.class_defs import *
 # TODO maybe use flask for display?
 # TODO use coverage testing
 # TODO maybe refactor mutations into their own classes, so instead of get modtation return Mutation.mutate(model)
+# How to get all subclasses for sc in Mutation.__subclasses__(): get_prob()
 def run():
     tournament_report = {}  # or load previous
     error_logs = []
@@ -88,8 +89,8 @@ def generate_initial_population():
     logits = OutputLayer()
     layers_to_train.append('logits')
     model = Model(convolutional_layers=[layer], logits=logits, image_shape=IMAGE_SHAPE, clasees=NUM_CLASSES)
-    training_parameters = TrainingParameters(layers_to_train=layers_to_train, iterations=interations_function,
-                                             learning_rate=LEARNING_RATE)
+    training_parameters = TrainingInstructions(layers_to_train=layers_to_train, iterations=interations_function,
+                                               learning_rate=LEARNING_RATE)
 
     yield model, training_parameters
 
@@ -226,8 +227,8 @@ def update_training_parameters(model, saved_parameters, new_layer_index):
         if i > layers_to_freeze:
             layers_to_train.append(layer.name)
 
-    new_training_parameters = TrainingParameters(layers_to_train=layers_to_train, iterations=interations_function,
-                                                 learning_rate=LEARNING_RATE, saved_parameters=new_saved_parameters)
+    new_training_parameters = TrainingInstructions(layers_to_train=layers_to_train, iterations=interations_function,
+                                                   learning_rate=LEARNING_RATE, saved_parameters=new_saved_parameters)
 
     return model, new_training_parameters
 
