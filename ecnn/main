@@ -1,5 +1,4 @@
-from ecnn.tensorflow_model import TensorflowModel
-from ecnn.data_utils import *
+from ecnn.datasets.data_utils import *
 
 class DataSet():
     def __init__(self, num_training=49000, num_validation=1000, num_test=1000, one_hot=True):

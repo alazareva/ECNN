@@ -20,19 +20,6 @@ DATASET = None
 
 DIR = 'trounament'
 
-#actions
-APPEND_CONVOLUTIONAL_LAYER = 0
-APPEND_DENSE_LAYER = 1
-REMOVE_CONVOLUTIONAL_LAYER = 2
-REMOVE_DENSE_LAYER = 3
-KEEP = 4
-INSERT_CONVOLUTIONAL_LAYER = 5
-INSERT_DENSE_LAYER = 6
-CROSS_MODELS = 7
-
-
-
-
 # CRAZINESS how much randomness is allowed to happen, reusing convs from earlier layers
 
 # ZOMBIE : bring back models that were mutated away from earier generations

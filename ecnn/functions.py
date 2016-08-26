@@ -1,6 +1,9 @@
 from ecnn.defaults import *
 import numpy as np
 
+
+# TODO these should be functions that maximize the target value
+
 def get_filter_size(output_shape, square=True):
     height, width, _ = output_shape
     min_height = max(int(height / 20), MIN_FILTER_SIZE)
@@ -23,3 +26,17 @@ def iterations(number_of_training_parameters):
 
 def learning_rate(number_of_training_parameters):
     return LEARNING_RATE
+
+def selection_function(model_summary):
+    return model_summary.validation_x_entropy
+'''
+stopping rule function! can be done for accuracy as well
+def stopping_rule():
+    loss = 100
+    def c(new_loss):
+        nonlocal loss
+        old_loss, loss = loss, new_loss
+        return loss < old_loss
+    return c
+
+'''

@@ -4,6 +4,8 @@ import numpy as np
 from ecnn.defaults import  *
 from ecnn import functions
 
+# TODO image shape and training set size are now in dataset!
+
 OutputLayer = namedlist('OutputLayer', [('name', 'logits'), ('hidden_units', NUM_CLASSES),
 										('training_history', [0]*MAX_GENERATIONS)], use_slots=True, default=None)
 
@@ -37,7 +39,7 @@ ModelSummary = namedlist('ModelSummary', [('name', NO_DEFAULT),
 										  ('input_channels', FACTORY(list))], default= None)
 
 TrainingFunctions = namedlist('TrainingFunctions', [('training_set_size', NO_DEFAULT),  #training set size move
-														  # to dataset
+														  # to dataset.py
 														('batch_size', NO_DEFAULT),  # function
 														('iterations', NO_DEFAULT ),  #function
 														('learning_rate', LEARNING_RATE)], default=None) #function
