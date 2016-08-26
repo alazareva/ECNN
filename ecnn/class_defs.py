@@ -2,9 +2,10 @@ from namedlist import namedlist, FACTORY, NO_DEFAULT
 import abc
 import numpy as np
 from ecnn.defaults import  *
+from ecnn import functions
 
 OutputLayer = namedlist('OutputLayer', [('name', 'logits'), ('hidden_units', NUM_CLASSES),
-										('training_history', NO_DEFAULT)], use_slots=True, default=None)
+										('training_history', [0]*MAX_GENERATIONS)], use_slots=True, default=None)
 
 Model = namedlist('Model', [('generation', NO_DEFAULT),
 							('convolutional_layers', FACTORY(list)),
@@ -15,14 +16,20 @@ Model = namedlist('Model', [('generation', NO_DEFAULT),
 							('image_shape', IMAGE_SHAPE),
 							('classes', NUM_CLASSES)], default=None)
 
-ConvolutionalLayer = namedlist('ConvolutionalLayer', ['filter_size', 'filters', 'output_shape', 'name', 'training_history'], default=None)
+ConvolutionalLayer = namedlist('ConvolutionalLayer', [('filter_size', NO_DEFAULT),
+													  ('filters', NO_DEFAULT),
+													  ('output_shape', NO_DEFAULT),
+													  ('name', NO_DEFAULT),
+													  ('training_history'[0]*MAX_GENERATIONS)], default=None)
 
-DenseLayer = namedlist('DenseLayer', ['hidden_units', 'name', 'training_history'], default= None)
+DenseLayer = namedlist('DenseLayer', [('hidden_units', NO_DEFAULT),
+									  ('name', NO_DEFAULT),
+									  ('training_history', [0]*MAX_GENERATIONS)], default= None)
 
 
 
 ModelSummary = namedlist('ModelSummary', [('name', NO_DEFAULT),
-										  ('number_of_trained_layers', NO_DEFAULT),
+										  ('validation_x_entropy', NO_DEFAULT),
 										  ('validation_accuracy', NO_DEFAULT),
 										  ('number_of_trained_parameters', NO_DEFAULT),
 										  ('filters', FACTORY(list)), ('layer_counts', NO_DEFAULT),
@@ -31,7 +38,6 @@ ModelSummary = namedlist('ModelSummary', [('name', NO_DEFAULT),
 
 TrainingInstructions = namedlist('TrainingInstructions', [('training_set_size', NO_DEFAULT),
 														('batch_size', NO_DEFAULT),
-														('layers_to_train', FACTORY(list)),
 														('iterations', NO_DEFAULT ),
 														('learning_rate', LEARNING_RATE),
 														('saved_parameters', FACTORY(dict))], default=None)
@@ -47,7 +53,28 @@ class SavedValues(dict):
 # be intantiated ith moded to return mutated models, main program has list of cls and can contruct them on the fly
 # based on retuned probs, add @ cache wwhen loaded morels but make deep copies
 # use abc to find all the subclasses
+# TODO maybe refactor get probability into functions
 
+
+class MutationUtils(object):
+	__metaclass__ = abc.ABCMeta
+
+	@staticmethod
+	def update_values_and_instructions(model, saved_values, new_layer_index):
+		num_layers_to_freeze =  np.random.randint(new_layer_index)
+		new_saved_values = {}
+		layers_to_freeze = []
+
+		for i, layer in enumerate(model.convolutional_layers + model.dense_layers + [model.logits]):
+			if i <= num_layers_to_freeze:
+				layers_to_freeze.append(layer.name)
+			if i < new_layer_index:  # old layers use old parameters
+				new_saved_values[layer.name] = saved_values[layer.name]
+
+
+		training_instructions = TrainingInstructions(layers_to_freeze=layers_to_freeze)
+
+		return training_instructions
 
 class Mutation(object):
 	__metaclass__ = abc.ABCMeta
@@ -60,7 +87,7 @@ class Mutation(object):
 
 	@staticmethod
 	@abc.abstractmethod
-	def mutate(model):
+	def mutate(model, saved_values):
 		"""mutates the model."""
 		return
 
@@ -75,26 +102,12 @@ class CrossOver(object):
 		return
 
 	@staticmethod
-	def update_values_and_instructions(model, saved_values, new_layer_index):
-		layers_to_freeze =  np.random.randint(new_layer_index)
-		new_saved_values = {}
-		layers_to_train = []
-
-		for i, layer in enumerate(model.convolutional_layers + model.dense_layers + [model.logits]):
-			if i < new_layer_index:  # old layers use old parameters
-				new_saved_values[layer.name] = saved_values[layer.name]
-			if i > layers_to_freeze:
-				layers_to_train.append(layer.name)
-
-		training_instructions = TrainingInstructions(layers_to_train=layers_to_train)
-
-		return training_instructions
-
-	@staticmethod
 	@abc.abstractmethod
-	def cross(model1, model2):
-		"""mutates the models returns the first one."""
+	def cross(model_values1, model_values2):
 		return
+
+
+
 
 class AppendConvolutionalLayer(Mutation):
 		@staticmethod
@@ -103,19 +116,33 @@ class AppendConvolutionalLayer(Mutation):
 			return
 
 		@staticmethod
-		def mutate(model):
-			"""mutates the model."""
-			return
+		def mutate(model, saved_values):
+			new_layer_index = len(model.convolutional_layers)
+			previous_layer = model.convolutional_layers[-1]
+			filter_size, _ = functions.get_filter_size(previous_layer.output_shape)
+			number_of_filters = functions.get_fnumber_of_filters() #maybe based on summary
+			new_layer = ConvolutionalLayer(filter_size=filter_size,
+										   number_of_filters=number_of_filters,
+										   name='c%d' % new_layer_index)
+			model.convolutional_layers.append(new_layer)
+			values, instructions = MutationUtils.update_values_and_instructions(model, saved_values, new_layer_index)
+			return model, values, instructions
 
 class AppendDenselLayer(Mutation):
 		@staticmethod
-		def get_probability(model):
+		def get_probability(summary):
 			"""Concrete the probability of particular mutation using model information."""
 			return
 		@staticmethod
-		def mutate(model):
-			"""mutates the model."""
-			return
+		def mutate(model, saved_values):
+			hidden_units = functions.get_desnse_layer_size() #evolving function
+			new_layer_index = len(model.dense_layers)
+			new_layer = DenseLayer(hidden_units = hidden_units,
+								   name='d%d' % new_layer_index)
+			model.dense_layers.append(new_layer)
+			new_layer_index += len(model.convolutional_layers)
+			values, instructions = MutationUtils.update_values_and_instructions(model, saved_values, new_layer_index)
+			return model, values, instructions
 
 class RemoveConvolutionalLayer(Mutation):
 	@staticmethod
@@ -124,10 +151,15 @@ class RemoveConvolutionalLayer(Mutation):
 		return
 
 	@staticmethod
-	def mutate(model):
-		"""mutates the model."""
-		return
-
+	def mutate(model, saved_values):
+		number_of_convolutional_layers = len(model.convolutional_layers)
+		layer_index = functions.get_remove_index(number_of_convolutional_layers)
+		model.convolutional_layers.pop(layer_index)
+		# rename layers
+		for i, layer in enumerate(model.convolutional_layers):
+			layer.name = 'c%d' % i
+		values, instructions = MutationUtils.update_values_and_instructions(model, saved_values, layer_index)
+		return model, values, instructions
 
 
 class RemoveDenselLayer(Mutation):
@@ -137,26 +169,40 @@ class RemoveDenselLayer(Mutation):
 		return
 
 	@staticmethod
-	def mutate(model):
-		"""mutates the model."""
-		return
+	def mutate(model, saved_values):
+		number_of_dense_layers = len(model.dense_layers)
+		layer_index = functions.get_remove_index(number_of_dense_layers)
+		model.dense_layers.pop(layer_index)
+		# rename layers
+		for i, layer in enumerate(model.dense_layers):
+			layer.name = 'd%d' % i
+		layer_index += len(model.convolutional_layers)
+		values, instructions = MutationUtils.update_values_and_instructions(model, saved_values, layer_index)
+		return model, values, instructions
+
 
 class Keep(Mutation):
 	@staticmethod
-	def get_probability(model):
-		"""Concrete the probability of particular mutation using model information."""
-		return
+	def get_probability(summary):
+		if sum(summary.layer_counts) + 3 >= MAX_CONVOLUTIONAL_LAYERS + MAX_DENSE_LAYER_SIZE:
+			return np.random.uniform(0.9, 0.95)
+		else:
+			return np.random.uniform(0.05, 0.8)
 
 	@staticmethod
-	def mutate(model):
+	def mutate(model, saved_values):
 		"""mutates the model."""
-		return
+		return model, saved_values, TrainingInstructions()
 
+'''
 class InsertConvolutionalLayer(Mutation):
 	@staticmethod
-	def get_probability(model):
-		"""Concrete the probability of particular mutation using model information."""
-		return
+	def get_probability(summary):
+		conv_layers, _ = summary.layer_counts
+		if conv_layers < MAX_CONVOLUTIONAL_LAYERS:
+			return np.random.uniform(0.1, 0.2)
+		else:
+			pass
 
 	@staticmethod
 	def mutate(model):
@@ -170,17 +216,17 @@ class InsertDenseLayer(Mutation):
 		return
 
 	@staticmethod
-	def mutate(model):
+	def mutate(model, saved_values):
 		"""mutates the model."""
 		return
-
+'''
 
 
 class AdoptFilters(CrossOver):
 	@staticmethod
-	def get_probability(model1, model2):
+	def get_probability(summary1, summary2):
 		"""Computes the probability of particular cross over using model information."""
-		if AdoptFilters.compatible_layers(model1, model2):
+		if AdoptFilters.compatible_layers(summary1, summary2):
 			return np.random.uniform(0.2,0.9)
 		else:
 			return 0
@@ -221,7 +267,6 @@ class AdoptFilters(CrossOver):
 		model1.ancestor = (model1.name, model2.name)
 		new_layer_index = model1_layer_idx + 1
 
-		values, instructions = super.update_values_and_instructions(model1, saved_values1, new_layer_index)
+		values, instructions = MutationUtils.update_values_and_instructions(model1, saved_values1, new_layer_index)
 
-		return model1,
-
+		return model1, values, instructions

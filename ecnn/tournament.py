@@ -13,8 +13,28 @@ from ecnn.class_defs import *
 
 
 # TODO maybe use flask for display?
+# TODO https://gist.github.com/Mistobaan/dd32287eeb6859c6668d GPU on mac
 # TODO use coverage testing
+# TODO decouple weights and trained params
 # TODO maybe refactor mutations into their own classes, so instead of get modtation return Mutation.mutate(model)
+# maybe have a predefined inital network that a user can put in
+# TODO  try to keep all weights during mutation
+# TODO don't freeze layers, it doesn't work
+# # TODO larning rate is a tensor so it can be adjusted during training (can pass in function) sess.run(train_step,learning_rate = tf.placeholder(tf.float32, shape=[]) feed_dict={learning_rate: 0.1})
+#  TODO have all train related variables as functions to pass in, reg strength, learnin rate, dropout, these can be
+# closures and can estimate internal params for functions based on feedback durning training
+
+'''
+stopping rule function! can be done for accuracy as well
+def stopping_rule():
+    loss = 100
+    def c(new_loss):
+        nonlocal loss
+        old_loss, loss = loss, new_loss
+        return loss < old_loss
+    return c
+'''
+
 # How to get all subclasses for sc in Mutation.__subclasses__(): get_prob()
 def run():
     tournament_report = {}  # or load previous
@@ -131,6 +151,29 @@ def load_summaries(generation):
     return summaries
 
 
+
+
+# TODO implement the following
+def choose_mutation(model_summary):
+    # this show be a smarter function  that takes into accout model size
+    c_layer_count, d_layer_count = model_summary.layer_counts
+
+
+
+def model_to_string(model):
+    conv_layers_string = ' --> '.join('[%s, fs: %d, f: %d]' %
+                                      (layer.name, layer.filter_size, layer.filters) for layer in
+                                      model.convolutional_layers)
+    dense_layers_string = ' --> '.join('[%s, h: %d]' %
+                                       (layer.name, layer.hidden_units) for layer in
+                                       model.dense_layers)
+    return ' --> '.join([conv_layers_string, dense_layers_string, model.logits.name])
+
+
+
+'''
+
+
 def possible_cross_overs(summaries):
     # {(name1, name2):, [(layey1,layer2),...])}
     _possible_cross_overs = {}
@@ -149,15 +192,6 @@ def possible_cross_overs(summaries):
     return _possible_cross_overs
 
 
-# TODO implement the following
-def choose_mutation(model_summary):
-    # this show be a smarter function  that takes into accout model size
-    c_layer_count, d_layer_count = model_summary.layer_counts
-
-
-# needs to return mutation, mutation_params
-
-
 
 def get_model_and_saved_parameters(model_name):
     generation, number = model_name.split('_')
@@ -168,11 +202,6 @@ def get_model_and_saved_parameters(model_name):
     with open(params_path, 'r') as params_file:
         params = pickle.load(params_file)
     return model, params
-
-
-# TODO make this based on number of trainable parameters
-def interations_function(number_of_training_parameters):
-    return 100  # could change this to be based on params
 
 
 def cross_models(model_params1, model_params2, **muation_params):
@@ -257,15 +286,6 @@ def remove_dense_layer(model, **muation_params):
     return model, layer_index
 
 
-def get_remove_index(number_of_layers):
-    assert number_of_layers > 0
-    # need to add high prob for removing larger layers
-    return number_of_layers - 1
-
-
-def get_layer_to_freeze(new_layer_index):
-    return np.random.randint(new_layer_index)  # freeze can include everyting up to the new layer
-
 
 def append_convolutional_layer(model, **muation_params):
     filter_size = muation_params['filter_size']
@@ -277,8 +297,7 @@ def append_convolutional_layer(model, **muation_params):
     return model, new_layer_index
 
 
-def get_desnse_layer_size():
-    return np.random.randint(MIN_DENSE_LAYER_SIZE, MAX_DENSE_LAYER_SIZE)
+
 
 
 def append_dense_layer(model, **muation_params):
@@ -291,22 +310,6 @@ def append_dense_layer(model, **muation_params):
 
     return model, new_layer_index
 
-
-def get_filter_size(height, width, square=True):  # for now returns squared filters but
-    min_height = max(int(height / 20), MIN_FILTER_SIZE)
-    max_height = min(int(height / 2), MAX_FILTER_SIZE)
-    return np.random.randint(min_height, max_height)
+'''
 
 
-def get_number_of_filters():  # for now returns squared filters but
-    return np.random.randint(MIN_FILTERS, MAX_FILTERS)
-
-
-def model_to_string(model):
-    conv_layers_string = ' --> '.join('[%s, fs: %d, f: %d]' %
-                                      (layer.name, layer.filter_size, layer.filters) for layer in
-                                      model.convolutional_layers)
-    dense_layers_string = ' --> '.join('[%s, h: %d]' %
-                                       (layer.name, layer.hidden_units) for layer in
-                                       model.dense_layers)
-    return ' --> '.join([conv_layers_string, dense_layers_string, model.logits.name])
