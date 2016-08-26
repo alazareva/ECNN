@@ -36,11 +36,11 @@ ModelSummary = namedlist('ModelSummary', [('name', NO_DEFAULT),
 										  ('trainable_parameters', NO_DEFAULT),
 										  ('input_channels', FACTORY(list))], default= None)
 
-TrainingInstructions = namedlist('TrainingInstructions', [('training_set_size', NO_DEFAULT),
-														('batch_size', NO_DEFAULT),
-														('iterations', NO_DEFAULT ),
-														('learning_rate', LEARNING_RATE),
-														('saved_parameters', FACTORY(dict))], default=None)
+TrainingFunctions = namedlist('TrainingFunctions', [('training_set_size', NO_DEFAULT),  #training set size move
+														  # to dataset
+														('batch_size', NO_DEFAULT),  # function
+														('iterations', NO_DEFAULT ),  #function
+														('learning_rate', LEARNING_RATE)], default=None) #function
 
 # refactor saved params to be their own thing decouple from Training Params
 
@@ -49,9 +49,9 @@ LayerValues = namedlist('LayerValues', ['weights', 'biases'], default=None)
 class SavedValues(dict):
     pass
 
-# TODO have base classes for Mutation and Corss, each subclass has static method to compute probs and can
+
 # be intantiated ith moded to return mutated models, main program has list of cls and can contruct them on the fly
-# based on retuned probs, add @ cache wwhen loaded morels but make deep copies
+# based on retuned probs,
 # use abc to find all the subclasses
 # TODO maybe refactor get probability into functions
 
@@ -60,21 +60,17 @@ class MutationUtils(object):
 	__metaclass__ = abc.ABCMeta
 
 	@staticmethod
-	def update_values_and_instructions(model, saved_values, new_layer_index):
-		num_layers_to_freeze =  np.random.randint(new_layer_index)
+	def update_values(model, saved_values, new_layer_index, removed=False):
 		new_saved_values = {}
-		layers_to_freeze = []
 
 		for i, layer in enumerate(model.convolutional_layers + model.dense_layers + [model.logits]):
-			if i <= num_layers_to_freeze:
-				layers_to_freeze.append(layer.name)
-			if i < new_layer_index:  # old layers use old parameters
-				new_saved_values[layer.name] = saved_values[layer.name]
+			if i == new_layer_index:
+				continue
+			if i == new_layer_index + 1 and not removed:
+				continue
+			new_saved_values[layer.name] = saved_values[layer.name]
 
-
-		training_instructions = TrainingInstructions(layers_to_freeze=layers_to_freeze)
-
-		return training_instructions
+		return new_saved_values
 
 class Mutation(object):
 	__metaclass__ = abc.ABCMeta
@@ -120,13 +116,13 @@ class AppendConvolutionalLayer(Mutation):
 			new_layer_index = len(model.convolutional_layers)
 			previous_layer = model.convolutional_layers[-1]
 			filter_size, _ = functions.get_filter_size(previous_layer.output_shape)
-			number_of_filters = functions.get_fnumber_of_filters() #maybe based on summary
+			number_of_filters = functions.get_number_of_filters() #maybe based on summary
 			new_layer = ConvolutionalLayer(filter_size=filter_size,
 										   number_of_filters=number_of_filters,
 										   name='c%d' % new_layer_index)
 			model.convolutional_layers.append(new_layer)
-			values, instructions = MutationUtils.update_values_and_instructions(model, saved_values, new_layer_index)
-			return model, values, instructions
+			values= MutationUtils.update_values(model, saved_values, new_layer_index)
+			return model, values
 
 class AppendDenselLayer(Mutation):
 		@staticmethod
@@ -141,8 +137,8 @@ class AppendDenselLayer(Mutation):
 								   name='d%d' % new_layer_index)
 			model.dense_layers.append(new_layer)
 			new_layer_index += len(model.convolutional_layers)
-			values, instructions = MutationUtils.update_values_and_instructions(model, saved_values, new_layer_index)
-			return model, values, instructions
+			values = MutationUtils.update_values(model, saved_values, new_layer_index)
+			return model, values
 
 class RemoveConvolutionalLayer(Mutation):
 	@staticmethod
@@ -158,8 +154,8 @@ class RemoveConvolutionalLayer(Mutation):
 		# rename layers
 		for i, layer in enumerate(model.convolutional_layers):
 			layer.name = 'c%d' % i
-		values, instructions = MutationUtils.update_values_and_instructions(model, saved_values, layer_index)
-		return model, values, instructions
+		values = MutationUtils.update_values(model, saved_values, layer_index)
+		return model, values
 
 
 class RemoveDenselLayer(Mutation):
@@ -177,8 +173,8 @@ class RemoveDenselLayer(Mutation):
 		for i, layer in enumerate(model.dense_layers):
 			layer.name = 'd%d' % i
 		layer_index += len(model.convolutional_layers)
-		values, instructions = MutationUtils.update_values_and_instructions(model, saved_values, layer_index)
-		return model, values, instructions
+		values = MutationUtils.update_values(model, saved_values, layer_index)
+		return model, values
 
 
 class Keep(Mutation):
@@ -192,7 +188,7 @@ class Keep(Mutation):
 	@staticmethod
 	def mutate(model, saved_values):
 		"""mutates the model."""
-		return model, saved_values, TrainingInstructions()
+		return model, saved_values
 
 '''
 class InsertConvolutionalLayer(Mutation):
@@ -231,12 +227,12 @@ class AdoptFilters(CrossOver):
 		else:
 			return 0
 	@staticmethod
-	def compatible_layers(model1, model2): #maybe model instead of model summary can be used and the other is run
+	def compatible_layers(summary1, summary2): #maybe model instead of model summary can be used and the other is run
 		# summary
-		filters1 = model1.filters
-		filters2 = model2.filters
-		channels1 = model1.input_channels
-		channels2 = model2.input_channels
+		filters1 = summary1.filters
+		filters2 = summary2.filters
+		channels1 = summary1.input_channels
+		channels2 = summary2.input_channels
 		x, y = np.where((np.absolute(filters1[:, np.newaxis] - filters2)
 						 + np.absolute(channels1[:, np.newaxis] - channels2)) == 0)
 		return list(zip(x, y))
@@ -264,9 +260,10 @@ class AdoptFilters(CrossOver):
 
 		model1.convolutional_layers[model1_layer_idx].filters = new_weights.shape[-1]
 		saved_values1[model1_layer.name] = LayerValues(weights=new_weights, biases=new_biases)
+
 		model1.ancestor = (model1.name, model2.name)
 		new_layer_index = model1_layer_idx + 1
 
-		values, instructions = MutationUtils.update_values_and_instructions(model1, saved_values1, new_layer_index)
+		values = MutationUtils.update_values(model1, saved_values1, new_layer_index)
 
-		return model1, values, instructions
+		return model1, values

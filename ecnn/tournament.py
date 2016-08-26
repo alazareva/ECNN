@@ -4,8 +4,9 @@ import os
 import pickle
 import random
 import itertools
-
+import functools
 import numpy as np
+import copy
 
 
 from ecnn.tensorflow_model import TensorflowModel
@@ -18,8 +19,6 @@ from ecnn.class_defs import *
 # TODO decouple weights and trained params
 # TODO maybe refactor mutations into their own classes, so instead of get modtation return Mutation.mutate(model)
 # maybe have a predefined inital network that a user can put in
-# TODO  try to keep all weights during mutation
-# TODO don't freeze layers, it doesn't work
 # # TODO larning rate is a tensor so it can be adjusted during training (can pass in function) sess.run(train_step,learning_rate = tf.placeholder(tf.float32, shape=[]) feed_dict={learning_rate: 0.1})
 #  TODO have all train related variables as functions to pass in, reg strength, learnin rate, dropout, these can be
 # closures and can estimate internal params for functions based on feedback durning training
@@ -90,8 +89,9 @@ def run():
 
 
 def select_models(model_summaries):
-    sorted_by_validation = sorted(model_summaries.values(), key=lambda model_summary: model_summary.validation_accuracy)
-    return {model_summary.name: model_summary for model_summary in sorted_by_validation[:SELECT]}
+    sorted_x_entropy = sorted(model_summaries.values(), key=lambda model_summary:
+                                                                model_summary.validation_x_entropy)
+    return {model_summary.name: model_summary for model_summary in sorted_x_entropy[:SELECT]}
 
 
 def generate_initial_population():
@@ -109,39 +109,63 @@ def generate_initial_population():
     logits = OutputLayer()
     layers_to_train.append('logits')
     model = Model(convolutional_layers=[layer], logits=logits, image_shape=IMAGE_SHAPE, clasees=NUM_CLASSES)
-    training_parameters = TrainingInstructions(layers_to_train=layers_to_train, iterations=interations_function,
-                                               learning_rate=LEARNING_RATE)
+    training_parameters = TrainingFunctions(layers_to_train=layers_to_train, iterations=interations_function,
+                                            learning_rate=LEARNING_RATE)
 
     yield model, training_parameters
 
 
+2
+
+
+def memoize(obj):
+    cache = obj.cache = {}
+    functools.wraps(obj)
+    def memoizer(*args, **kwargs):
+        if args not in cache:
+            cache[args] = obj(*args, **kwargs)
+        return copy.deepcopy(cache[args])
+    return memoizer
+
+@memoize
+def load_model(model_name):
+    generation, number = model_name.split('_')
+    model_path = os.path.join(DIR, generation, number + '_model.p')
+    with open(model_path, 'r') as model_file:
+        model = pickle.load(model_file)
+    return model
+
+@memoize
+def load_saved_values(model_name):
+    generation, number = model_name.split('_')
+    params_path = os.path.join(DIR, generation, number + '_values.p')
+    with open(params_path, 'r') as params_file:
+        values = pickle.load(params_file)
+    return values
+
+
 def generate_mutated_models(summaries):
-    # takes a string list of model names
-
-    # keep track if cross over done
     seen = set()
-    for mutation, *params in _get_mutations(summaries):
-        if mutation == CROSS_MODELS and (mutation, params) not in seen:  # make sure this puts the tuple back
-            model1_name, model2_name, mutation_params = params
-            model_params1 = get_model_and_saved_parameters(model1_name)
-            model_params2 = get_model_and_saved_parameters(model2_name)
-            yield cross_models(model_params1, model_params2, **mutation_params)
-        else:
-            model_name, mutation_params = params
-            model, saved_parameters = get_model_and_saved_parameters(model_name)
-            yield mutate(mutation, model, saved_parameters, **mutation_params)
+    models_names = summaries.keys()
+    random_model_name = np.random.choice(models_names)
+    mutations = Mutation.__subclasses__()
+    cross_overs = CrossOver.__subclasses__()
+    mutation_probabilities = [mutation.get_probability(summaries[random_model_name]) for mutation in mutations]
+    max_mutation_prob = max(mutation_probabilities)
 
+    pairs  = itertools.combinations(models_names, 2)
+    random_pair = np.random.choice(pairs)
+    cross_over_probabilities = [cross_over.get_probability(summaries[random_pair[0]], summaries[random_pair[1]]) for
+                                cross_over in cross_overs]
+    max_co_prob = max(cross_over_probabilities)
+    if max_co_prob > max_mutation_prob and random_pair not in seen:
+        saved_model1, saved_values1 = load_model(random_pair[0]), load_saved_values(random_pair[0])
+        saved_model2, saved_values2 = load_model(random_pair[1]), load_saved_values(random_pair[1])
+        yield cross_overs[cross_over_probabilities.index(max_co_prob)].cross((saved_model1, saved_values1),(saved_model2, saved_values2))
 
-def _get_mutations(summaries):
-    possible_pairs = possible_cross_overs(summaries)  # {(name1, name2):, [(layey1,layer2),...])}
-    all_items = [summary.name for summary in summaries] + possible_pairs.keys()
-    random_model = random.choice(all_items)
-    if len(random_model) == 2:  # if it's a cross
-        layers_to_cross = np.random.choice(possible_pairs[random_model])
-        yield (CROSS_MODELS, random_model, {'layer_idxs': layers_to_cross})
     else:
-        mutation, mutation_params = choose_mutation(summaries[random_model])
-        yield (mutation, random_model, mutation_params)
+        saved_model, saved_values = load_model(random_model_name), load_saved_values(random_model_name)
+        yield mutations[mutations.index(max_mutation_prob)].mutate(saved_model, saved_values)
 
 
 def load_summaries(generation):
@@ -153,12 +177,6 @@ def load_summaries(generation):
 
 
 
-# TODO implement the following
-def choose_mutation(model_summary):
-    # this show be a smarter function  that takes into accout model size
-    c_layer_count, d_layer_count = model_summary.layer_counts
-
-
 
 def model_to_string(model):
     conv_layers_string = ' --> '.join('[%s, fs: %d, f: %d]' %
@@ -168,148 +186,4 @@ def model_to_string(model):
                                        (layer.name, layer.hidden_units) for layer in
                                        model.dense_layers)
     return ' --> '.join([conv_layers_string, dense_layers_string, model.logits.name])
-
-
-
-'''
-
-
-def possible_cross_overs(summaries):
-    # {(name1, name2):, [(layey1,layer2),...])}
-    _possible_cross_overs = {}
-    combinations = itertools.combinations(summaries.keys(), 2)
-    for n1, n2 in combinations:
-        filters1 = summaries[n1].filters
-        filters2 = summaries[n2].filters
-        channels1 = summaries[n1].input_channels
-        channels2 = summaries[n2].input_channels
-        x, y = np.where((np.absolute(filters1[:, np.newaxis] - filters2)
-                         + np.absolute(channels1[:, np.newaxis] - channels2)) == 0)
-        pairs = list(zip(x, y))
-        if pairs:
-            _possible_cross_overs[(n1, n2)] = pairs
-            _possible_cross_overs[(n2, n1)] = list(zip(y, x))
-    return _possible_cross_overs
-
-
-
-def get_model_and_saved_parameters(model_name):
-    generation, number = model_name.split('_')
-    model_path = os.path.join(DIR, generation, number + '_model.p')
-    params_path = os.path.join(DIR, generation, number + '_params.p')
-    with open(model_path, 'r') as model_file:
-        model = pickle.load(model_file)
-    with open(params_path, 'r') as params_file:
-        params = pickle.load(params_file)
-    return model, params
-
-
-def cross_models(model_params1, model_params2, **muation_params):
-    # model one gets model 2s weights but keeps it's other configurations
-    model1, params1 = model_params1
-    model2, params2 = model_params2
-
-    model1_layer_idx, model2_layer_idx = muation_params['layer_idxs']
-
-    model1_layer = model1.convolutional_layers[model1_layer_idx]
-    model2_layer = model2.convolutional_layers[model2_layer_idx]
-
-    layer_parameters1 = params1.saved_parameters[model1_layer.name]
-    layer_parameters2 = params2.saved_parameters[model2_layer.name]
-
-    new_weights = np.concatenate((layer_parameters1.weights, layer_parameters2.weights), axis=3)
-    new_biases = np.concatenate((layer_parameters1.biases, layer_parameters2.biases), axis=0)
-
-    model1.convolutional_layers[model1_layer_idx].filters = new_weights.shape[-1]
-    params1.saved_parameters[model1_layer.name] = LayerValues(weights=new_weights, biases=new_biases)
-    new_layer_index = model1_layer_idx + 1
-    model1.ancestor = (model1.name, model2.name)
-
-    return update_training_parameters(model1, params1.saved_parameters, new_layer_index)
-
-
-def mutate(mutation, model, saved_parameters, **muation_params):
-    if mutation == KEEP:
-        return model, saved_parameters
-    if mutation == APPEND_CONVOLUTIONAL_LAYER:
-        new_model, new_layer_index = append_convolutional_layer(model, **muation_params)
-    if mutation == APPEND_DENSE_LAYER:
-        new_model, new_layer_index = append_dense_layer(model, **muation_params)
-    if mutation == REMOVE_CONVOLUTIONAL_LAYER:
-        new_model, new_layer_index = remove_convolutional_layer(model, **muation_params)
-    if mutation == REMOVE_DENSE_LAYER:
-        new_model, new_layer_index = remove_dense_layer(model, **muation_params)
-
-    new_model.ancestor = model.name
-
-    return update_training_parameters(new_model, saved_parameters)
-
-
-def update_training_parameters(model, saved_parameters, new_layer_index):
-    layers_to_freeze = get_layer_to_freeze(new_layer_index)
-    new_saved_parameters = {}
-    layers_to_train = []
-
-    for i, layer in enumerate(model.convolutional_layers + model.dense_layers + [model.logits]):
-        if i < new_layer_index:  # old layers use old parameters
-            new_saved_parameters[layer.name] = saved_parameters[layer.name]
-        if i > layers_to_freeze:
-            layers_to_train.append(layer.name)
-
-    new_training_parameters = TrainingInstructions(layers_to_train=layers_to_train, iterations=interations_function,
-                                                   learning_rate=LEARNING_RATE, saved_parameters=new_saved_parameters)
-
-    return model, new_training_parameters
-
-
-def remove_convolutional_layer(model, **muation_params):
-    # number_of_convolutional_layers = len(model.convolutional_layers)
-    # layer_index = get_remove_index(number_of_convolutional_layers)
-    layer_index = muation_params['layer_index']
-    model.convolutional_layers.pop(layer_index)
-    # rename layers
-    for i, layer in enumerate(model.convolutional_layers):
-        layer.name = 'c%d' % i
-
-    return model, layer_index
-
-
-def remove_dense_layer(model, **muation_params):
-    number_of_dense_layers = len(model.dense_layers)
-    # layer_index = get_remove_index(number_of_dense_layers)
-    layer_index = muation_params['layer_index']
-    model.dense_layers.pop(layer_index)
-    # rename layers
-    for i, layer in enumerate(model.dense_layers):
-        layer.name = 'd%d' % i
-    layer_index += len(model.convolutional_layers)
-    return model, layer_index
-
-
-
-def append_convolutional_layer(model, **muation_params):
-    filter_size = muation_params['filter_size']
-    number_of_filters = muation_params['number_of_filters']
-    new_layer_index = len(model.convolutional_layers)
-    new_layer = ConvolutionalLayer(filter_size, number_of_filters, None, 'c%d' % new_layer_index)
-    model.convolutional_layers.append(new_layer)
-
-    return model, new_layer_index
-
-
-
-
-
-def append_dense_layer(model, **muation_params):
-    # hidden_units = get_desnse_layer_size()
-    hidden_units = muation_params['hidden_units']
-    new_layer_index = len(model.dense_layers)
-    new_layer = DenseLayer(hidden_units, 'd%d' % new_layer_index)
-    model.dense_layers.append(new_layer)
-    new_layer_index += len(model.convolutional_layers)  # the layer index will be shifted
-
-    return model, new_layer_index
-
-'''
-
 

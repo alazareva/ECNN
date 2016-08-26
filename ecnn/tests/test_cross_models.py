@@ -25,8 +25,8 @@ class TestCross_models(TestCase):
         ml1 = LayerValues(weights=w1, biases=b1)
         ml2 = LayerValues(weights=w2, biases=b2)
 
-        mp1 = TrainingInstructions(saved_parameters={'c0': ml1})
-        mp2 = TrainingInstructions(saved_parameters={'c0': ml2})
+        mp1 = TrainingFunctions(saved_parameters={'c0': ml1})
+        mp2 = TrainingFunctions(saved_parameters={'c0': ml2})
         c0_expected = ConvolutionalLayer(filter_size=5, filters=5, output_shape=[20, 20, 3], name='c0')
         mutation_params = {'layer_idxs': (0,0)}
 
@@ -66,8 +66,8 @@ class TestCross_models(TestCase):
         ml1 = LayerValues(weights=w1, biases=b1)
         ml2 = LayerValues(weights=w2, biases=b2)
 
-        mp1 = TrainingInstructions(saved_parameters={'c0': None, 'c1': ml1})
-        mp2 = TrainingInstructions(saved_parameters={'c0': ml2})
+        mp1 = TrainingFunctions(saved_parameters={'c0': None, 'c1': ml1})
+        mp2 = TrainingFunctions(saved_parameters={'c0': ml2})
 
         c0_expected = ConvolutionalLayer(filter_size=5, filters=3, output_shape=[20, 20, 3], name='c0')
         c1_expected = ConvolutionalLayer(filter_size=6, filters=5, output_shape=[40, 40, 3], name='c1')
