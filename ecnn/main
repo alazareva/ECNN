@@ -1,52 +1,10 @@
-from ecnn.datasets.data_utils import *
-
-class DataSet():
-    def __init__(self, num_training=49000, num_validation=1000, num_test=1000, one_hot=True):
-        cifar10_dir = 'datasets/cifar10/cifar-10-batches-py'
-        X_train, y_train, X_test, y_test = load_CIFAR10(cifar10_dir)
-
-        # Subsample the data
-        mask = range(num_training, num_training + num_validation)
-        X_val = X_train[mask]
-        y_val = y_train[mask]
-        mask = range(num_training)
-        X_train = X_train[mask]
-        y_train = y_train[mask]
-        mask = range(num_test)
-        X_test = X_test[mask]
-        y_test = y_test[mask]
-
-        #Normalize the data: subtract the mean image
-        mean_image = np.mean(X_train, axis=0)
-        X_train -= mean_image
-        X_val -= mean_image
-        X_test -= mean_image
-
-        size = y_train.max() + 1
-
-        self.y_val = self.one_hot(y_val, size)
-        self.y_test = self.one_hot(y_test, size)
-        self.y_train = self.one_hot(y_train, size)
-
-        self.X_train = X_train.reshape(len(X_train), -1)
-        self.X_val = X_val.reshape(len(X_val), -1)
-        self.X_test = X_test.reshape(len(X_test), -1)
-
-    def one_hot(self, y, size):
-        out = np.zeros((y.size, size))
-        out[np.arange(y.size), y] = 1
-        return out
-
-    def next_batch(self, batch_size):
-        indeces = np.random.choice(np.arange(len(self.X_train)), size=batch_size)
-        X_batch = self.X_train[indeces]
-        y_batch = self.y_train[indeces]
-        return X_batch, y_batch
+import ecnn.datasets.dataset as ds
+import ecnn.tournament as tmnt
 
 def main():
-    print('getting data')
-    dataset = DataSet()
-    print('OK')
+    tournament = tmnt.Tournament()
+    tournament.run()
+
 
 if __name__ == "__main__":
     main()

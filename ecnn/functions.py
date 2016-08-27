@@ -4,6 +4,7 @@ import numpy as np
 
 # TODO these should be functions that maximize the target value
 
+
 def get_filter_size(output_shape, square=True):
     height, width, _ = output_shape
     min_height = max(int(height / 20), MIN_FILTER_SIZE)
@@ -26,6 +27,9 @@ def iterations(number_of_training_parameters):
 
 def learning_rate(number_of_training_parameters):
     return LEARNING_RATE
+
+def batch_size():
+    return BATCH_SIZE
 
 def selection_function(model_summary):
     return model_summary.validation_x_entropy

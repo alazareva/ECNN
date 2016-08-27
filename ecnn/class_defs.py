@@ -2,9 +2,11 @@ from namedlist import namedlist, FACTORY, NO_DEFAULT
 import abc
 import numpy as np
 from ecnn.defaults import  *
-from ecnn import functions
+from ecnn import mock_functions as functions
+#from ecnn import functions
 
-# TODO image shape and training set size are now in dataset!
+# TODO image shape and training set size are no
+# TODO global config file
 
 OutputLayer = namedlist('OutputLayer', [('name', 'logits'), ('hidden_units', NUM_CLASSES),
 										('training_history', [0]*MAX_GENERATIONS)], use_slots=True, default=None)
@@ -14,15 +16,13 @@ Model = namedlist('Model', [('generation', NO_DEFAULT),
 							('dense_layers', FACTORY(list)),
 							('logits', OutputLayer()),
 							('name', NO_DEFAULT),
-							('ancestor', NO_DEFAULT),
-							('image_shape', IMAGE_SHAPE),
-							('classes', NUM_CLASSES)], default=None)
+							('ancestor', NO_DEFAULT)], default=None)
 
 ConvolutionalLayer = namedlist('ConvolutionalLayer', [('filter_size', NO_DEFAULT),
 													  ('filters', NO_DEFAULT),
 													  ('output_shape', NO_DEFAULT),
 													  ('name', NO_DEFAULT),
-													  ('training_history'[0]*MAX_GENERATIONS)], default=None)
+													  ('training_history', [0]*MAX_GENERATIONS)], default=None)
 
 DenseLayer = namedlist('DenseLayer', [('hidden_units', NO_DEFAULT),
 									  ('name', NO_DEFAULT),
@@ -33,23 +33,20 @@ DenseLayer = namedlist('DenseLayer', [('hidden_units', NO_DEFAULT),
 ModelSummary = namedlist('ModelSummary', [('name', NO_DEFAULT),
 										  ('validation_x_entropy', NO_DEFAULT),
 										  ('validation_accuracy', NO_DEFAULT),
-										  ('number_of_trained_parameters', NO_DEFAULT),
 										  ('filters', FACTORY(list)), ('layer_counts', NO_DEFAULT),
 										  ('trainable_parameters', NO_DEFAULT),
 										  ('input_channels', FACTORY(list))], default= None)
 
-TrainingFunctions = namedlist('TrainingFunctions', [('training_set_size', NO_DEFAULT),  #training set size move
-														  # to dataset.py
-														('batch_size', NO_DEFAULT),  # function
+TrainingFunctions = namedlist('TrainingFunctions', [('batch_size', NO_DEFAULT),  # function
 														('iterations', NO_DEFAULT ),  #function
 														('learning_rate', LEARNING_RATE)], default=None) #function
-
-# refactor saved params to be their own thing decouple from Training Params
 
 LayerValues = namedlist('LayerValues', ['weights', 'biases'], default=None)
 
 class SavedValues(dict):
-    pass
+	def __init__(self):
+		self.name = None
+
 
 
 # be intantiated ith moded to return mutated models, main program has list of cls and can contruct them on the fly
