@@ -95,12 +95,11 @@ class TensorflowModel(object):
                             layer.training_history[self.model.generation] = max_epohs
 
                     # Update model summary with information
-                    self.model_summary.validation_accuracy = validation_accuracy
-                    self.model_summary.validation_x_entropy = validation_x_entropy
-                    self.model_summary.layer_counts = (len(convolutional_layers), len(dense_layers))
-                    self.model_summary.trainable_parameters = number_of_params_to_train
+                    self.model.validation_accuracy = validation_accuracy
+                    self.model.validation_x_entropy = validation_x_entropy
+                    self.model.trainable_parameters = number_of_params_to_train
 
-                    return self.model, new_values, self.model_summary
+                    return self.model, new_values
 
 
             else:
@@ -144,8 +143,6 @@ class TensorflowModel(object):
         output_shape = self.get_tensor_shape(output)  # maybe do this after cuz it's in saved
 
         if self.train_mode:
-            self.model_summary.filters.append(layer.filter_size)
-            self.model_summary.input_channels.append(input_size)
             layer.output_shape = output_shape
             self.add_variables_to_collections(layer.name, W, b)
 

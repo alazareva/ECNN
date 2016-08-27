@@ -31,8 +31,8 @@ def learning_rate(number_of_training_parameters):
 def batch_size():
     return BATCH_SIZE
 
-def selection_function(model_summary):
-    return model_summary.validation_x_entropy
+def selection_function(model):
+    return model.validation_x_entropy
 '''
 stopping rule function! can be done for accuracy as well
 def stopping_rule():
