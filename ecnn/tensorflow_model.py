@@ -1,6 +1,7 @@
 import tensorflow as tf
 import numpy as np
 
+
 from ecnn.class_defs import *
 
 
@@ -11,14 +12,13 @@ class TensorflowModel(object):
         self.training_functions = None
         self.train_mode = False
         self.variables_to_save = {}
-        self.model_summary = ModelSummary()
         self.saved_values = {}
 
     def run(self, dataset, saved_values, training_functions=None):
 
         convolutional_layers = self.model.convolutional_layers
         dense_layers = self.model.dense_layers
-        image_shape = self.model.image_shape
+        image_shape = dataset.image_shape
 
         if  training_functions:
             self.training_functions = training_functions
@@ -26,73 +26,84 @@ class TensorflowModel(object):
             self.train_mode = True
 
         with tf.Graph().as_default():
-
             x = tf.placeholder(tf.float32, [None, np.prod(image_shape)], name='x')
             y_ = tf.placeholder(tf.float32, [None, dataset.classes])
+            keep_prob_conv = tf.placeholder(tf.float32)
+            keep_prob_dense = tf.placeholder(tf.float32)
             height, width, channels = dataset.image_shape
 
 
             input_tensor = tf.reshape(x, shape=[-1, height, width, channels])
 
-            print('input_shapen', input_tensor.get_shape().as_list())
 
             for layer in convolutional_layers:
-                print(layer.name, input_tensor.get_shape().as_list())
-                input_tensor = self.apply_convolution(layer, input_tensor)
+                input_tensor = self.apply_convolution(layer, input_tensor, keep_prob=keep_prob_conv)
 
             input_tensor = tf.reshape(input_tensor, [-1, np.prod(self.get_tensor_shape(input_tensor))])  # reshape before dense layers
 
             for layer in dense_layers:
-                input_tensor = self.apply_dense_pass(layer, input_tensor)
+                input_tensor = self.apply_dense_pass(layer, input_tensor, keep_prob=keep_prob_dense) #,
 
             # logits
             layer = self.model.logits
-            logits = self.apply_dense_pass(layer, input_tensor)
+            logits = self.get_logits(layer, input_tensor)
 
             accuracy = tf.reduce_mean(tf.cast(tf.equal(tf.argmax(logits, 1), tf.argmax(y_, 1)), tf.float32))
             cross_entropy = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits(logits, y_))
             tf.add_to_collection('losses', cross_entropy)
             loss = tf.add_n(tf.get_collection('losses'))
 
+            cross_entropy_average = tf.train.ExponentialMovingAverage(0.99)
+            cross_entropy_average_op = cross_entropy_average.apply(cross_entropy)
+
+
+
             if self.train_mode:
-                train_op = tf.train.GradientDescentOptimizer(self.training_functions.learning_rate).minimize(loss)
+                number_of_params_to_train = self.compute_number_of_parameters(tf.trainable_variables())
+                train_op = tf.train.GradientDescentOptimizer(self.training_functions.learning_rate(number_of_params_to_train)).minimize(loss)
                 init = tf.initialize_all_variables()
 
-                with tf.Session() as sess:
+                with tf.Session() as sess: # config=tf.ConfigProto(log_device_placement=True
                     sess.run(init)
                     batch_size = self.training_functions.batch_size()
-                    number_of_params_to_train = self.compute_number_of_parameters(tf.trainable_variables())
 
                     max_epohs = self.training_functions.iterations(number_of_params_to_train)
-                    max_batches = int(dataset.training_set_size / batch_size) * max_epohs
+                    batches_per_epoh = int(dataset.training_set_size / batch_size)
+                    max_batches =  batches_per_epoh * max_epohs
+                    stopping_rule = training_functions.stopping_rule()
 
                     # TODO if batch size is dynamic, this will need to change
 
                     step = 0
-                    print('Training')
                     while step < max_batches:
+                        k_p_c = training_functions.keep_prob_conv()
+                        c_p_d = training_functions.keep_prob_dense()
                         batch_xs, batch_y = dataset.next_batch(batch_size)
-                        feed_dict = {y_: batch_y, x: batch_xs}
-                        _, loss_value = sess.run([train_op, loss], feed_dict=feed_dict)
-                        print('%.5f' % loss_value)
+                        feed_dict = {y_: batch_y, x: batch_xs, keep_prob_conv: k_p_c, keep_prob_dense: c_p_d}
 
+                        _, loss_value = sess.run([train_op, loss], feed_dict=feed_dict)
                         self.check_nan(loss_value)
                         step += 1
+                        if step % batches_per_epoh == 0:
+                            cross_entropy_value = sess.run(cross_entropy, feed_dict=feed_dict)
+                            if stopping_rule(cross_entropy_value):
+                                print('loss converged')
+                                break
+
 
                     # Generate validation metric
                     val_xs, val_y = dataset.X_val, dataset.y_val
-                    feed_dict = {y_: val_y, x: val_xs}
+                    feed_dict = {y_: val_y, x: val_xs, keep_prob_conv: 1.0,keep_prob_dense: 1.0}
                     validation_accuracy, validation_x_entropy = sess.run([accuracy, cross_entropy],
                                                                              feed_dict=feed_dict)
                     # Save layers
-                    new_values = {}
+                    new_values = SavedValues()
                     for layer in convolutional_layers + dense_layers + [self.model.logits]:
                         W = self.variables_to_save[layer.name + '_W']
                         b = self.variables_to_save[layer.name + '_b']
                         layer_values = LayerValues(W.eval(), b.eval())
                         new_values[layer.name] = layer_values
-                        if layer.name not in self.training_functions.layers_to_freeze:
-                            layer.training_history[self.model.generation] = max_epohs
+                        layer.training_history[self.model.generation] = max_epohs
 
                     # Update model summary with information
                     self.model.validation_accuracy = validation_accuracy
@@ -107,13 +118,14 @@ class TensorflowModel(object):
                 with tf.Session() as sess:
                     sess.run(init)
                     test_xs, test_y = dataset.X_test, dataset.y_test
-                    feed_dict = {y_: test_y, x: test_xs}
+                    feed_dict = {y_: test_y, x: test_xs, keep_prob_conv: 1.0,
+                                 keep_prob_dense: 1.0}
                     test_accuracy = sess.run([accuracy], feed_dict=feed_dict)
                     return test_accuracy
 
     def check_nan(self, loss_value):
-        if np.isnan(loss_value):
-            raise ValueError('Model diverged with loss = NaN')
+        if np.isnan(loss_value) or np.isinf(loss_value):
+            raise ValueError('Model diverged with loss = NaN or inf')
 
     def get_tensor_shape(self, tensor):
         """
@@ -128,8 +140,7 @@ class TensorflowModel(object):
     def compute_number_of_parameters(self, collection):
         return sum([np.prod(self.get_tensor_shape(tensor)) for tensor in collection])
 
-    def apply_convolution(self, layer, input_tensor):
-        print('apply convolution to %s' % layer.name)
+    def apply_convolution(self, layer, input_tensor, keep_prob = None):
 
         input_shape = self.get_tensor_shape(input_tensor)
         input_size = input_shape[-1]
@@ -140,6 +151,12 @@ class TensorflowModel(object):
         output = tf.nn.relu(tf.nn.bias_add(
             tf.nn.conv2d(input_tensor, W, strides=[1, 1, 1, 1], padding='SAME'), b))
 
+        if layer.max_pool:
+            output = self.conv2d(output)
+
+        if keep_prob is not None:
+            output = tf.nn.dropout(output, keep_prob)
+
         output_shape = self.get_tensor_shape(output)  # maybe do this after cuz it's in saved
 
         if self.train_mode:
@@ -148,10 +165,17 @@ class TensorflowModel(object):
 
         return output
 
-    # TODO add reguralization
-    def apply_dense_pass(self, layer, input_tensor):
+
+    def conv2d(self, input_tensor):
+        return tf.nn.max_pool(input_tensor, ksize=[1, 2, 2, 1], strides=[1, 2, 2, 1],
+                              padding='SAME')
+
+
+    def apply_dense_pass(self, layer, input_tensor, keep_prob=None):
         logits = self.get_logits(layer, input_tensor)
         output = tf.nn.relu(logits)  # regularize
+        if keep_prob is not None:
+            output = tf.nn.dropout(output, keep_prob)
         return output
 
     def get_logits(self, layer, input_tensor):
@@ -171,15 +195,16 @@ class TensorflowModel(object):
     def add_variables_to_collections(self, name, W, b):
         self.variables_to_save[name + '_W'] = W
         self.variables_to_save[name + '_b'] = b
+        if self.train_mode:
+            weight_decay = tf.mul(tf.nn.l2_loss(W), self.training_functions.regularization(), name='weight_loss')
+            tf.add_to_collection('losses', weight_decay)
 
     def get_weights_biases(self, shape, layer, stddev):
         if layer.name in self.saved_values:  # if there's already weights
-            print('restoring weights for %s' % layer.name)
-            layer_parameters = self.saved_values[layer.name]
-            W = tf.Variable(layer_parameters.weights, name=layer.name + '_W', trainable=True)
-            b = tf.Variable(layer_parameters.biases, name=layer.name + '_b', trainable=True)
+            layer_values = self.saved_values[layer.name]
+            W = tf.Variable(layer_values.weights, name=layer.name + '_W', trainable=True)
+            b = tf.Variable(layer_values.biases, name=layer.name + '_b', trainable=True)
         elif self.train_mode:
-            print('new weights for %s' % layer.name)
             W = tf.Variable(tf.truncated_normal(shape, stddev=stddev), name=layer.name + '_W', trainable=True)
             b = tf.Variable(tf.zeros(shape[-1]), name=layer.name + '_b', trainable=True)
         else:

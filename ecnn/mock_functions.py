@@ -1,6 +1,4 @@
-from ecnn.defaults import *
-
-
+'''
 def get_filter_size(real_shape, output_shape=[32,32,3], square=True):
     return (4, 4)
 
@@ -25,3 +23,4 @@ def batch_size():
 
 def selection_function(model_summary):
     return model_summary.validation_x_entropy
+'''

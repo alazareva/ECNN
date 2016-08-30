@@ -6,10 +6,11 @@ import abc
 import numpy as np
 
 from ecnn.class_defs import *
+from ecnn import functions
 
 def model_to_string(model):
-    conv_layers_string = ' --> '.join('[%s, fs: %d, f: %d]' %
-                                          (layer.name, layer.filter_size, layer.filters) for layer in
+    conv_layers_string = ' --> '.join('[%s, fs: %d, f: %d, p: %r]' %
+                                          (layer.name, layer.filter_size, layer.filters, layer.max_pool) for layer in
                                           model.convolutional_layers)
 
     dense_layers_string = ' --> '.join('[%s, h: %d]' %
@@ -43,7 +44,7 @@ def save(obj, filepath):
 
 def select_models(models):
     sorted_models = sorted(models.values(), key=functions.selection_function)
-    return {model.name: model for model in sorted_models[:SELECT]}
+    return {model.name: model for model in sorted_models[-SELECT:]}
 
 
 def generate_initial_population():
@@ -53,13 +54,17 @@ def generate_initial_population():
     '''
     while True:
         model = Model()
-        number_of_initial_convo_layers = np.random.randint(1, INITIAL_CONVOLUTIONAL_LAYER)
+        number_of_initial_convo_layers = np.random.randint(2, INITIAL_CONVOLUTIONAL_LAYERS)
+        input_shape = IMAGE_SHAPE
         for i in range(number_of_initial_convo_layers):
-            filter_size, _ = functions.get_filter_size(IMAGE_SHAPE[0], IMAGE_SHAPE[1])  # this will need to change if
-            # pooling applied
+            filter_size, _ = functions.get_filter_size(input_shape)
             filters = functions.get_number_of_filters()
-            layer = ConvolutionalLayer(filter_size=filter_size, filters=filters, name='c%d' % i)
+            pooling = functions.is_max_pooling(input_shape)
+            layer = ConvolutionalLayer(filter_size=filter_size, filters=filters, max_pool=pooling,  name='c%d' % i)
             model.convolutional_layers.append(layer)
+            if pooling:
+                input_shape[0] /= 2
+                input_shape[1] /= 2
         logits = OutputLayer()
         model.logits = logits
         yield model, SavedValues()
@@ -74,7 +79,6 @@ def load_model(model_name):
 
 def copy_model(model):
     m = copy.deepcopy(model)
-    m.name = None
     m.generation = None
     m.validation_accuracy = None
     m.validation_x_entropy = None
@@ -100,14 +104,20 @@ def generate_mutated_models(models):
         mutation_probabilities = [mutation.get_probability(m) for mutation in mutations]
         max_mutation_prob = max(mutation_probabilities)
 
-        pairs = list(itertools.combinations(models, 2))
+        keep_prob = Keep.get_probability(m)
+
+        pairs = list(itertools.permutations(models, 2))
         m1, m2 = pairs[np.random.choice(len(pairs))]
         cross_over_probabilities = [cross_over.get_probability(m1, m2) for cross_over in cross_overs]
         max_co_prob = max(cross_over_probabilities)
         if max_co_prob > max_mutation_prob and (m1.name, m2.name) not in seen:
             v1, v2 = load_saved_values(m1.name), load_saved_values(m2.name)
             m1, m2 = copy_model(m1), copy_model(m2)
+            seen.add((m1.name, m2.name))
             yield cross_overs[cross_over_probabilities.index(max_co_prob)].cross((m1, v1), (m2, v2))
+        elif keep_prob > max_mutation_prob and m.name not in seen: #TODO this isn't working, see why
+            seen.add(m.name)
+            yield copy_model(m), load_saved_values(m.name)
         else:
             m, v = copy_model(m), load_saved_values(m.name)
             yield mutations[mutation_probabilities.index(max_mutation_prob)].mutate(m, v)
@@ -190,9 +200,10 @@ class AppendConvolutionalLayer(Mutation):
         new_layer_index = len(model.convolutional_layers)
         previous_layer = model.convolutional_layers[-1]
         filter_size, _ = functions.get_filter_size(previous_layer.output_shape)
-        filters = functions.get_number_of_filters() #maybe based on summary
+        filters = functions.get_number_of_filters()
+        pooling = functions.is_max_pooling(previous_layer.output_shape)
         new_layer = ConvolutionalLayer(filter_size=filter_size,
-                                       filters=filters,
+                                       filters=filters, max_pool=pooling,
                                        name='c%d' % new_layer_index)
         model.convolutional_layers.append(new_layer)
         values= MutationUtils.update_values(model, saved_values, new_layer_index)
@@ -259,20 +270,14 @@ class RemoveDenselLayer(Mutation):
         return model, values
 
 
-class Keep(Mutation):
+class Keep(object):
     @staticmethod
     def get_probability(model):
-        if len(model.convolutional_layers) + len(model.dense_layers) + 3 \
+        if len(model.convolutional_layers) + len(model.dense_layers) + 1 \
                 >= MAX_CONVOLUTIONAL_LAYERS + MAX_DENSE_LAYER_SIZE:
             return np.random.uniform(0.9, 0.95)
         else:
             return np.random.uniform(0.05, 0.8)
-
-    @staticmethod
-    def mutate(model, saved_values):
-        """mutates the model."""
-        return model, saved_values
-
 '''
 class InsertConvolutionalLayer(Mutation):
 	@staticmethod
@@ -324,33 +329,34 @@ class AdoptFilters(CrossOver):
     def cross(model_values1, model_values2):
         """mutates the models returns the first one."""
         # model one gets model 2s weights but keeps it's other configurations
-        model1, saved_values1 = model_values1
-        model2, saved_values2 = model_values2
+        m1, v1 = model_values1
+        m2, v2 = model_values2
 
-        candidate_layers = AdoptFilters.compatible_layers(model1, model2)
+        candidate_layers = AdoptFilters.compatible_layers(m1, m2)
         layers = candidate_layers[np.random.choice(len(candidate_layers))]
 
-        model1_layer_idx, model2_layer_idx = layers
+        m1_layer_idx, m2_layer_idx = layers
 
-        model1_layer = model1.convolutional_layers[model1_layer_idx]
-        model2_layer = model2.convolutional_layers[model2_layer_idx]
+        m1_layer = m1.convolutional_layers[m1_layer_idx]
+        m2_layer = m2.convolutional_layers[m2_layer_idx]
 
-        layer_values1 = saved_values1[model1_layer.name]
-        layer_values2 = saved_values2[model2_layer.name]
+        layer_v1 = v1[m1_layer.name]
+        layer_v2 = v2[m2_layer.name]
 
         # for testing
 
-        #new_weights = np.concatenate((layer_values1.weights, layer_values2.weights), axis=3)
-        #new_biases = np.concatenate((layer_values1.biases, layer_values2.biases), axis=0)
+        new_weights = np.concatenate((layer_v1.weights, layer_v2.weights), axis=3)
+        new_biases = np.concatenate((layer_v1.biases, layer_v2.biases), axis=0)
 
-        #model1.convolutional_layers[model1_layer_idx].filters = new_weights.shape[-1]
-        #saved_values1[model1_layer.name] = LayerValues(weights=new_weights, biases=new_biases)
+        m1.convolutional_layers[m1_layer_idx].filters = new_weights.shape[-1]
+        v1[m1_layer.name] = LayerValues(weights=new_weights, biases=new_biases)
 
-        model1.convolutional_layers[model1_layer_idx].filters = model1.convolutional_layers[model1_layer_idx].filters+model2.convolutional_layers[model2_layer_idx].filters
+        #m1.convolutional_layers[m1_layer_idx].filters = m1.convolutional_layers[
+        # m1_layer_idx].filters+m2.convolutional_layers[m2_layer_idx].filters
 
-        model1.ancestor = (model1.name, model2.name)
-        new_layer_index = model1_layer_idx + 1
+        m1.ancestor = (m1.name, m2.name)
+        new_layer_index = m1_layer_idx + 1
 
-        values = MutationUtils.update_values(model1, saved_values1, new_layer_index)
+        values = MutationUtils.update_values(m1, v1, new_layer_index)
 
-        return model1, values
+        return m1, values

@@ -1,20 +1,17 @@
 # script to run tourtnament
 
 import os
-import pickle
-import itertools
-import functools
-import copy
+import time
 from collections import defaultdict
-
+import importlib
 
 from ecnn.tensorflow_model import TensorflowModel
 from ecnn.class_defs import *
-from ecnn import mock_functions as functions
+# from ecnn import mock_functions as functions
 import ecnn.model_utils as model_utils
+import ecnn.functions as functions
 
-# TODO SAT finish mutation defs and tests, do regularization
-
+# TODO next week, unit tests, multi gpu, adaptive research (talk rose)
 
 # TODO maybe use flask for display?
 # TODO https://gist.github.com/Mistobaan/dd32287eeb6859c6668d GPU on mac
@@ -27,10 +24,11 @@ import ecnn.model_utils as model_utils
 # TODO maybe have restor function or restor from generation
 
 # TODO flag to remove unsused values
-# TODO test this withouth tf model first
+# TODO maybe use average loss and weights
+# TODO keep track of mutation codes
 
 class Tournament(object):
-    def run(self):
+    def run(self, dataset):
         tournament_report = defaultdict(dict)  # or load previous
         error_logs = []
 
@@ -38,10 +36,14 @@ class Tournament(object):
             os.makedirs(os.path.join(DIR, str(generation)), exist_ok=True)
             training_functions = TrainingFunctions(iterations=functions.iterations,
                                                    learning_rate=functions.learning_rate,
-                                                   batch_size=functions.batch_size)
+                                                   batch_size=functions.batch_size,
+                                                   regularization=functions.regularization,
+                                                   stopping_rule=functions.stopping_rule,
+                                                   keep_prob_conv=functions.keep_prob_conv,
+                                                   keep_prob_dense=functions.keep_prob_dense)
             print('Getting new Generation %d' % (generation))
             if generation > 0:
-                model_values = model_utils.generate_mutated_models(tournament_report[generation - 1]['selected'])
+                model_values = model_utils.generate_mutated_models(selected)
             else:
                 model_values = model_utils.generate_initial_population()
             all_models = {}
@@ -50,31 +52,43 @@ class Tournament(object):
                 try:
                     model, saved_values = model_values.__next__()
                     model.generation = generation
-                    #tf_model = TensorflowModel(model)
-                    #trained_model, new_values, model_summary = tf_model.run(DATASET, saved_values,
-                    #training_functions=training_functions)
+                    print('training Model:', model_utils.model_to_string(model))
+                    tf_model = TensorflowModel(model)
+                    start_time = time.time()
+                    trained_model, new_values  = tf_model.run(dataset, saved_values,
+                                                              training_functions=training_functions)
+
+                    duration = time.time() - start_time
                     #for testing
+                    '''
                     for l in model.convolutional_layers:
                         l.output_shape = IMAGE_SHAPE
                     trained_model, new_values = model, model_utils.values_for_testing(model)
 
                     trained_model.validation_accuracy  = 5
                     trained_model.validation_x_entropy = 8
+                    '''
 
                     model_name = '%d_%d' % (generation, population)
                     trained_model.name = model_name
-                    #new_values.name = model_name
-
+                    trained_model.ancestor = model.name
+                    new_values.name = model_name
+                    print('generation %d: model %d, time = %.2f' % (generation, population, float(duration)))
                     print('model, accuracy:', model_name, trained_model.validation_accuracy)
-                    print('model structure:', model_utils.model_to_string(trained_model))
+                    print('model, x_entropy:', trained_model.validation_x_entropy)
                     all_models[model_name] = trained_model
                     model_utils.save(trained_model, os.path.join(DIR, str(generation), '%d_model.p') % population)
                     model_utils.save(new_values, os.path.join(DIR, str(generation), '%d_values.p') % population)
                     population += 1
+                except ValueError as ve:
+                    print(str(ve))
+                    continue
                 except Exception as e:
-                    #print(str(e))
                     error_logs.append({'%d_%d' % (generation, population): str(e)})
                     raise e
+
+            # regenrate val set
+            dataset.update_validation_set()
             # TODO save report periodically so that it can be loaded if crash happens
             # save summaries for the generation
             selected = model_utils.select_models(all_models)
