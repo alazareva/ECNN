@@ -5,6 +5,7 @@ import copy
 import abc
 import numpy as np
 from collections import defaultdict
+import scipy
 
 from ecnn.class_defs import *
 from ecnn import functions
@@ -47,6 +48,48 @@ def save(obj, filepath):
 def select_models(models):
     sorted_models = sorted(models.values(), key=functions.selection_function_val_accuracy)
     return {model.name: model for model in sorted_models[-SELECT:]}
+
+# TODO make selection function a global param, refactor out duplicate code
+def update_layer_value_probabilities(models):
+    sorted_models = sorted(models.values(), key=functions.selection_function_val_accuracy)
+    top = sorted_models[-SELECT:]
+    bottom = sorted_models[:-SELECT]
+
+    top_conv =   [get_average_conv_layer_size(model) for model in top]
+    bottom_conv =   [get_average_conv_layer_size(model) for model in top]
+
+    top_mean = np.mean(top_conv)
+    bottom_mean = np.mean(bottom_conv)
+    _, p = scipy.stats.ttest_ind(top_mean, bottom_mean)
+    if p < 0.05:
+        print('adjusting conv parama')
+        if top_mean < bottom_mean:
+            LayerUtils.conv_beta += 2
+        else:
+            LayerUtils.conv_alpha += 2
+        print(LayerUtils.conv_beta, LayerUtils.conv_alpha)
+
+    top_dense = [get_average_dense_layer_size(model) for model in top if model.dense_layers]
+    bottom_dense = [get_average_dense_layer_size(model) for model in bottom if model.dense_layers]
+
+    if  top_dense and  top_dense:
+        top_mean = np.mean(top_dense)
+        bottom_mean = np.mean(bottom_dense)
+        _, p = scipy.stats.ttest_ind(top_mean, bottom_mean)
+        if p < 0.05:
+            print('adjusting dense parama')
+            if top_mean < bottom_mean:
+              LayerUtils.dense_beta += 2
+            else:
+              LayerUtils.dense_alpha += 2
+            print(LayerUtils.dense_beta, LayerUtils.dense_alpha)
+
+
+def get_average_conv_layer_size(model):
+    return np.mean([layer.filters for layer in model.convolutional_layers])
+
+def get_average_dense_layer_size(model):
+    return np.mean([layer.hidden_units for layer in model.dense_layers])
 
 
 def generate_initial_population():
@@ -186,7 +229,7 @@ class LayerUtils(object):
 
     @staticmethod
     def get_number_of_filters():  # for now returns squared filters but
-        return np.random.randint(MIN_FILTERS, MAX_FILTERS)
+        return MIN_FILTERS+int(np.random.beta(LayerUtils.conv_alpa, LayerUtils.conv_beta)*(MAX_FILTERS-MIN_FILTERS))
 
     @staticmethod # TODO refactor this
     def is_max_pooling(output_shape):
@@ -199,8 +242,8 @@ class LayerUtils(object):
 
     @staticmethod
     def get_desnse_layer_size():
-        return np.random.randint(MIN_DENSE_LAYER_SIZE, MAX_DENSE_LAYER_SIZE)
-
+        return MIN_DENSE_LAYER_SIZE+int(np.random.beta(LayerUtils.dense_alpha,
+                                                       LayerUtils.dense_beta)*(MAX_DENSE_LAYER_SIZE-MIN_DENSE_LAYER_SIZE))
     @staticmethod
     def get_remove_index(number_of_layers):
         assert number_of_layers > 0

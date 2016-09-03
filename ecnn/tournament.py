@@ -92,6 +92,7 @@ class Tournament(object):
                 model_utils.update_mutation_probabilities(all_models)
                 mutation_alpha_beta = {m.__name__: (m.alpha, m.beta) for m in model_utils.Mutation.__subclasses__()}
                 tournament_report[generation]['mutation_alpha_beta'] = mutation_alpha_beta
+                model_utils.update_layer_value_probabilities(all_models.values())
 
             model_utils.save(all_models, os.path.join(DIR, str(generation), 'summary.p'))
             model_utils.save(tournament_report, os.path.join(DIR,'report.p'))
