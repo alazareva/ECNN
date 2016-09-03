@@ -22,7 +22,8 @@ Model = namedlist('Model', [('generation', NO_DEFAULT),
 							('ancestor', NO_DEFAULT),
 							('trainable_parameters', NO_DEFAULT),
 							('validation_x_entropy', NO_DEFAULT),
-							('validation_accuracy', NO_DEFAULT)], default=None)
+							('validation_accuracy', NO_DEFAULT),
+							('mutation', NO_DEFAULT)], default=None)
 
 ConvolutionalLayer = namedlist('ConvolutionalLayer', [('filter_size', NO_DEFAULT),
 													  ('filters', NO_DEFAULT),

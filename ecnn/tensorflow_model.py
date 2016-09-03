@@ -30,6 +30,7 @@ class TensorflowModel(object):
             y_ = tf.placeholder(tf.float32, [None, dataset.classes])
             keep_prob_conv = tf.placeholder(tf.float32)
             keep_prob_dense = tf.placeholder(tf.float32)
+            learning_rate = tf.placeholder(tf.float32)
             height, width, channels = dataset.image_shape
 
 
@@ -54,13 +55,16 @@ class TensorflowModel(object):
             loss = tf.add_n(tf.get_collection('losses'))
 
             cross_entropy_average = tf.train.ExponentialMovingAverage(0.99)
-            cross_entropy_average_op = cross_entropy_average.apply(cross_entropy)
+            cross_entropy_average_op = cross_entropy_average.apply([cross_entropy])
+            variable_averages = tf.train.ExponentialMovingAverage(0.9999) # TODO set the optional params
+            variables_averages_op = variable_averages.apply(tf.trainable_variables())
 
 
 
             if self.train_mode:
                 number_of_params_to_train = self.compute_number_of_parameters(tf.trainable_variables())
-                train_op = tf.train.GradientDescentOptimizer(self.training_functions.learning_rate(number_of_params_to_train)).minimize(loss)
+                with tf.control_dependencies([cross_entropy_average_op, variables_averages_op]):
+                    train_op = tf.train.GradientDescentOptimizer(learning_rate).minimize(loss)
                 init = tf.initialize_all_variables()
 
                 with tf.Session() as sess: # config=tf.ConfigProto(log_device_placement=True
@@ -73,22 +77,29 @@ class TensorflowModel(object):
                     stopping_rule = training_functions.stopping_rule()
 
                     # TODO if batch size is dynamic, this will need to change
-
+                    k_p_c = training_functions.keep_prob_conv()
+                    c_p_d = training_functions.keep_prob_dense()
+                    lr_function = training_functions.learning_rate(0.5)
+                    lr = lr_function(None)
                     step = 0
                     while step < max_batches:
-                        k_p_c = training_functions.keep_prob_conv()
-                        c_p_d = training_functions.keep_prob_dense()
+
                         batch_xs, batch_y = dataset.next_batch(batch_size)
-                        feed_dict = {y_: batch_y, x: batch_xs, keep_prob_conv: k_p_c, keep_prob_dense: c_p_d}
+                        feed_dict = {y_: batch_y, x: batch_xs, keep_prob_conv: k_p_c, keep_prob_dense: c_p_d,
+                                     learning_rate: lr}
 
                         _, loss_value = sess.run([train_op, loss], feed_dict=feed_dict)
                         self.check_nan(loss_value)
                         step += 1
-                        if step % batches_per_epoh == 0:
+                        if step % batches_per_epoh == 0: # TODO maybe revert old values if stopping rule
                             cross_entropy_value = sess.run(cross_entropy, feed_dict=feed_dict)
-                            if stopping_rule(cross_entropy_value):
-                                print('loss converged')
-                                break
+                            lr = lr_function(cross_entropy_value)
+                            val_xs, val_y = dataset.X_val, dataset.y_val
+                            feed_dict = {y_: val_y, x: val_xs, keep_prob_conv: 1.0, keep_prob_dense: 1.0}
+                            val_acc = sess.run(accuracy, feed_dict=feed_dict)
+                            if stopping_rule(val_acc):
+                                 print('stopping rule')
+                                 break
 
 
                     # Generate validation metric
@@ -99,15 +110,15 @@ class TensorflowModel(object):
                     # Save layers
                     new_values = SavedValues()
                     for layer in convolutional_layers + dense_layers + [self.model.logits]:
-                        W = self.variables_to_save[layer.name + '_W']
-                        b = self.variables_to_save[layer.name + '_b']
+                        W = variable_averages.average(self.variables_to_save[layer.name + '_W'])
+                        b = variable_averages.average(self.variables_to_save[layer.name + '_b'])
                         layer_values = LayerValues(W.eval(), b.eval())
                         new_values[layer.name] = layer_values
                         layer.training_history[self.model.generation] = max_epohs
 
                     # Update model summary with information
                     self.model.validation_accuracy = validation_accuracy
-                    self.model.validation_x_entropy = validation_x_entropy
+                    self.model.validation_x_entropy = cross_entropy_average.average(cross_entropy).eval()
                     self.model.trainable_parameters = number_of_params_to_train
 
                     return self.model, new_values

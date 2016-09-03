@@ -4,6 +4,7 @@ import os
 import copy
 import abc
 import numpy as np
+from collections import defaultdict
 
 from ecnn.class_defs import *
 from ecnn import functions
@@ -16,7 +17,8 @@ def model_to_string(model):
     dense_layers_string = ' --> '.join('[%s, h: %d]' %
                                        (layer.name, layer.hidden_units) for layer in
                                        model.dense_layers)
-    return ' --> '.join([conv_layers_string, dense_layers_string, model.logits.name])
+    return ' --> '.join([conv_layers_string, dense_layers_string, model.logits.name, str(model.ancestor),
+                                                                                        str(model.mutation)])
 
 
 def filters(model):
@@ -43,7 +45,7 @@ def save(obj, filepath):
 
 
 def select_models(models):
-    sorted_models = sorted(models.values(), key=functions.selection_function)
+    sorted_models = sorted(models.values(), key=functions.selection_function_val_accuracy)
     return {model.name: model for model in sorted_models[-SELECT:]}
 
 
@@ -55,11 +57,11 @@ def generate_initial_population():
     while True:
         model = Model()
         number_of_initial_convo_layers = np.random.randint(2, INITIAL_CONVOLUTIONAL_LAYERS)
-        input_shape = IMAGE_SHAPE
+        input_shape = IMAGE_SHAPE.copy()
         for i in range(number_of_initial_convo_layers):
-            filter_size, _ = functions.get_filter_size(input_shape)
-            filters = functions.get_number_of_filters()
-            pooling = functions.is_max_pooling(input_shape)
+            filter_size, _ = LayerUtils.get_filter_size(input_shape)
+            filters = LayerUtils.get_number_of_filters()
+            pooling = LayerUtils.is_max_pooling(input_shape)
             layer = ConvolutionalLayer(filter_size=filter_size, filters=filters, max_pool=pooling,  name='c%d' % i)
             model.convolutional_layers.append(layer)
             if pooling:
@@ -97,14 +99,14 @@ def load_saved_values(model_name):
 def generate_mutated_models(models):
     seen = set()
     models = list(models.values())
+    for model in models:
+        yield Keep.keep(model)
     while True:
         m = models[np.random.choice(len(models))]
         mutations = Mutation.__subclasses__()
         cross_overs = CrossOver.__subclasses__()
         mutation_probabilities = [mutation.get_probability(m) for mutation in mutations]
         max_mutation_prob = max(mutation_probabilities)
-
-        keep_prob = Keep.get_probability(m)
 
         pairs = list(itertools.permutations(models, 2))
         m1, m2 = pairs[np.random.choice(len(pairs))]
@@ -114,13 +116,14 @@ def generate_mutated_models(models):
             v1, v2 = load_saved_values(m1.name), load_saved_values(m2.name)
             m1, m2 = copy_model(m1), copy_model(m2)
             seen.add((m1.name, m2.name))
-            yield cross_overs[cross_over_probabilities.index(max_co_prob)].cross((m1, v1), (m2, v2))
-        elif keep_prob > max_mutation_prob and m.name not in seen: #TODO this isn't working, see why
-            seen.add(m.name)
-            yield copy_model(m), load_saved_values(m.name)
+            new_model, new_values =  cross_overs[cross_over_probabilities.index(max_co_prob)].cross((m1, v1), (m2, v2))
+            new_model.ancestor = (m1.name, m2.name)
+            yield new_model, new_values
         else:
             m, v = copy_model(m), load_saved_values(m.name)
-            yield mutations[mutation_probabilities.index(max_mutation_prob)].mutate(m, v)
+            new_model, new_values = mutations[mutation_probabilities.index(max_mutation_prob)].mutate(m, v)
+            new_model.ancestor = m.name
+            yield new_model, new_values
 
 
 def load_summaries(generation):
@@ -136,8 +139,72 @@ def load(filepath):
     return obj
 
 
+def update_mutation_probabilities(models):
+    eval_func = functions.selection_function_val_accuracy
+    parents = {m.ancestor: m for m in models.values() if m.mutation == 'Keep'} # just filter dictionary
+    print('got parents', parents.keys())
+
+    rec = defaultdict(list)
+    mutations = defaultdict(list)
+    for model in models.values():
+        if model.mutation != 'Keep' and model.mutation != 'AdoptFilters':
+            rec[model.ancestor].append(model)
+    print(rec)
+
+    for parent, children in rec.items():
+        parent_eval =  eval_func(parents[parent]) if parent in parents else 0
+        for child in children:
+            mutations[child.mutation].append(1 if eval_func(child) >= parent_eval else 0)
+
+    print(mutations)
+
+    for mutation in Mutation.__subclasses__():
+      if mutation.__name__ in mutations:
+        mutation_results =  mutations[mutation.__name__]
+        percent_success = np.mean(mutation_results)
+        if percent_success >= 0.5:
+            mutation.alpha *= 1+percent_success
+            print('adjusted alpha for %s to %.3f' % (mutation.__name__, mutation.alpha))
+        if percent_success <= 0.5:
+            mutation.beta *= 1+(1-percent_success)
+            print('adjusted beta for %s to %.3f' % (mutation.__name__, mutation.beta))
 
 
+class LayerUtils(object):
+    conv_alpa = 2
+    conv_beta = 2
+    dense_alpha = 2
+    dense_beta = 2
+
+    @staticmethod
+    def get_filter_size(output_shape, square=True):
+        height, width, _ = output_shape
+        min_height = min(max(int(height / 20), MIN_FILTER_SIZE), MAX_FILTER_SIZE) #3
+        max_height = max(min(int(height / 4), MAX_FILTER_SIZE),MIN_FILTER_SIZE) #8
+        height = np.random.randint(min_height, max_height)
+        return (height, height)
+
+    @staticmethod
+    def get_number_of_filters():  # for now returns squared filters but
+        return np.random.randint(MIN_FILTERS, MAX_FILTERS)
+
+    @staticmethod # TODO refactor this
+    def is_max_pooling(output_shape):
+        height, width, _ = output_shape
+        if height >= 10 and width >= 10:
+            choice = np.random.randint(0, 100)
+            if choice < 30:
+                return True
+        return False
+
+    @staticmethod
+    def get_desnse_layer_size():
+        return np.random.randint(MIN_DENSE_LAYER_SIZE, MAX_DENSE_LAYER_SIZE)
+
+    @staticmethod
+    def get_remove_index(number_of_layers):
+        assert number_of_layers > 0
+        return number_of_layers - 1
 
 class MutationUtils(object):
     __metaclass__ = abc.ABCMeta
@@ -157,7 +224,8 @@ class MutationUtils(object):
 
 class Mutation(object):
     __metaclass__ = abc.ABCMeta
-
+    alpha = 2
+    beta = 2
     @staticmethod
     @abc.abstractmethod
     def get_probability(model):
@@ -193,20 +261,21 @@ class AppendConvolutionalLayer(Mutation):
         if len(model.convolutional_layers) >= MAX_CONVOLUTIONAL_LAYERS:
             return 0
         else:
-            return np.random.uniform(0.05, 0.6)
+            return np.random.beta(AppendConvolutionalLayer.alpha, AppendConvolutionalLayer.beta)
 
     @staticmethod
     def mutate(model, saved_values):
         new_layer_index = len(model.convolutional_layers)
         previous_layer = model.convolutional_layers[-1]
-        filter_size, _ = functions.get_filter_size(previous_layer.output_shape)
-        filters = functions.get_number_of_filters()
-        pooling = functions.is_max_pooling(previous_layer.output_shape)
+        filter_size, _ = LayerUtils.get_filter_size(previous_layer.output_shape)
+        filters = LayerUtils.get_number_of_filters()
+        pooling = LayerUtils.is_max_pooling(previous_layer.output_shape)
         new_layer = ConvolutionalLayer(filter_size=filter_size,
                                        filters=filters, max_pool=pooling,
                                        name='c%d' % new_layer_index)
         model.convolutional_layers.append(new_layer)
         values= MutationUtils.update_values(model, saved_values, new_layer_index)
+        model.mutation =   AppendConvolutionalLayer.__name__
         return model, values
 
 class AppendDenselLayer(Mutation):
@@ -215,17 +284,18 @@ class AppendDenselLayer(Mutation):
         if len(model.dense_layers) >= MAX_DENSE_LAYERS:
             return 0
         else:
-            return np.random.uniform(0.05, 0.5)
+            return np.random.beta(AppendDenselLayer.alpha, AppendDenselLayer.beta)
 
     @staticmethod
     def mutate(model, saved_values):
-        hidden_units = functions.get_desnse_layer_size() #evolving function
+        hidden_units = LayerUtils.get_desnse_layer_size() #evolving function
         new_layer_index = len(model.dense_layers)
         new_layer = DenseLayer(hidden_units = hidden_units,
                                name='d%d' % new_layer_index)
         model.dense_layers.append(new_layer)
         new_layer_index += len(model.convolutional_layers)
         values = MutationUtils.update_values(model, saved_values, new_layer_index)
+        model.mutation =   AppendDenselLayer.__name__
         return model, values
 
 class RemoveConvolutionalLayer(Mutation):
@@ -234,18 +304,19 @@ class RemoveConvolutionalLayer(Mutation):
         if len(model.convolutional_layers) < 2:
             return 0
         else:
-            return np.random.uniform(0.05, 0.2)
+            return np.random.beta(RemoveConvolutionalLayer.alpha, RemoveConvolutionalLayer.beta)
 
 
     @staticmethod
     def mutate(model, saved_values):
         number_of_convolutional_layers = len(model.convolutional_layers)
-        layer_index = functions.get_remove_index(number_of_convolutional_layers)
+        layer_index = LayerUtils.get_remove_index(number_of_convolutional_layers)
         model.convolutional_layers.pop(layer_index)
         # rename layers
         for i, layer in enumerate(model.convolutional_layers):
             layer.name = 'c%d' % i
         values = MutationUtils.update_values(model, saved_values, layer_index)
+        model.mutation =   RemoveConvolutionalLayer.__name__
         return model, values
 
 
@@ -255,18 +326,19 @@ class RemoveDenselLayer(Mutation):
         if len(model.dense_layers) == 0:
             return 0
         else:
-            return np.random.uniform(0.05, 0.2)
+            return np.random.beta(RemoveDenselLayer.alpha, RemoveDenselLayer.beta)
 
     @staticmethod
     def mutate(model, saved_values):
         number_of_dense_layers = len(model.dense_layers)
-        layer_index = functions.get_remove_index(number_of_dense_layers)
+        layer_index = LayerUtils.get_remove_index(number_of_dense_layers)
         model.dense_layers.pop(layer_index)
         # rename layers
         for i, layer in enumerate(model.dense_layers):
             layer.name = 'd%d' % i
         layer_index += len(model.convolutional_layers)
         values = MutationUtils.update_values(model, saved_values, layer_index)
+        model.mutation =   RemoveDenselLayer.__name__
         return model, values
 
 
@@ -278,6 +350,14 @@ class Keep(object):
             return np.random.uniform(0.9, 0.95)
         else:
             return np.random.uniform(0.05, 0.8)
+    @staticmethod
+    def keep(model):
+        m = copy_model(model)
+        m.ancestor = m.name
+        m.mutation = Keep.__name__
+        return m, load_saved_values(m.name)
+
+
 '''
 class InsertConvolutionalLayer(Mutation):
 	@staticmethod
@@ -354,9 +434,9 @@ class AdoptFilters(CrossOver):
         #m1.convolutional_layers[m1_layer_idx].filters = m1.convolutional_layers[
         # m1_layer_idx].filters+m2.convolutional_layers[m2_layer_idx].filters
 
-        m1.ancestor = (m1.name, m2.name)
         new_layer_index = m1_layer_idx + 1
 
         values = MutationUtils.update_values(m1, v1, new_layer_index)
+        m1.mutation =   AdoptFilters.__name__
 
         return m1, values
