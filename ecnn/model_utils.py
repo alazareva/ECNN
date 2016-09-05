@@ -5,7 +5,7 @@ import copy
 import abc
 import numpy as np
 from collections import defaultdict
-import scipy
+from scipy import stats
 
 from ecnn.class_defs import *
 from ecnn import functions
@@ -45,51 +45,45 @@ def save(obj, filepath):
         pickle.dump(obj, ofile)
 
 
-def select_models(models):
-    sorted_models = sorted(models.values(), key=functions.selection_function_val_accuracy)
-    return {model.name: model for model in sorted_models[-SELECT:]}
+def select_models(models, key_function, select):
+    sorted_models = sorted(models.values(), key=key_function)
+    return {model.name: model for model in sorted_models[-select:]}
 
-# TODO make selection function a global param, refactor out duplicate code
-def update_layer_value_probabilities(models):
-    sorted_models = sorted(models.values(), key=functions.selection_function_val_accuracy)
+
+def update_probabilities(models, key_function):
+    update_layer_value_probabilities(models, key_function)
+    update_mutation_probabilities(models, key_function)
+
+def update_layer_value_probabilities(models, key_function):
+    sorted_models = sorted(models.values(), key=key_function)
     top = sorted_models[-SELECT:]
     bottom = sorted_models[:-SELECT]
+    update_layer_value_probs(top, bottom, ConvolutionalLayerUtils)
+    update_layer_value_probs(top, bottom, DenseLayerUtils)
 
-    top_conv =   [get_average_conv_layer_size(model) for model in top]
-    bottom_conv =   [get_average_conv_layer_size(model) for model in top]
 
-    top_mean = np.mean(top_conv)
-    bottom_mean = np.mean(bottom_conv)
-    _, p = scipy.stats.ttest_ind(top_mean, bottom_mean)
-    if p < 0.05:
-        print('adjusting conv parama')
-        if top_mean < bottom_mean:
-            LayerUtils.conv_beta += 2
-        else:
-            LayerUtils.conv_alpha += 2
-        print(LayerUtils.conv_beta, LayerUtils.conv_alpha)
+def restore_probabilities(mutation_alpha_beta, layer_alpha_beta):
+    for m in Mutation.__subclasses__():
+        m.alpha, m.beta = mutation_alpha_beta[m.__name__]
+        print('restored', m.alpha, m.beta)
+    for lu in LayerUtils.__subclasses__():
+        lu.alpha, lu.beta = layer_alpha_beta[lu.__name__]
+        print('restored', lu.alpha, lu.beta)
 
-    top_dense = [get_average_dense_layer_size(model) for model in top if model.dense_layers]
-    bottom_dense = [get_average_dense_layer_size(model) for model in bottom if model.dense_layers]
-
-    if  top_dense and  top_dense:
-        top_mean = np.mean(top_dense)
-        bottom_mean = np.mean(bottom_dense)
-        _, p = scipy.stats.ttest_ind(top_mean, bottom_mean)
+def update_layer_value_probs(bottom, top, cls):
+    top = [cls.get_average_layer_size(model) for model in top if cls.has_layers(model)]
+    bottom = [cls.get_average_layer_size(model) for model in bottom if cls.has_layers(model)]
+    if top and bottom:
+        _, p = stats.ttest_ind(top, bottom)
         if p < 0.05:
-            print('adjusting dense parama')
+            top_mean = np.mean(top)
+            bottom_mean = np.mean(bottom)
+            print('adjusting parama', cls)
             if top_mean < bottom_mean:
-              LayerUtils.dense_beta += 2
+                cls.beta += 2
             else:
-              LayerUtils.dense_alpha += 2
-            print(LayerUtils.dense_beta, LayerUtils.dense_alpha)
-
-
-def get_average_conv_layer_size(model):
-    return np.mean([layer.filters for layer in model.convolutional_layers])
-
-def get_average_dense_layer_size(model):
-    return np.mean([layer.hidden_units for layer in model.dense_layers])
+                cls.alpha += 2
+            print(cls.beta, cls.alpha)
 
 
 def generate_initial_population():
@@ -102,9 +96,9 @@ def generate_initial_population():
         number_of_initial_convo_layers = np.random.randint(2, INITIAL_CONVOLUTIONAL_LAYERS)
         input_shape = IMAGE_SHAPE.copy()
         for i in range(number_of_initial_convo_layers):
-            filter_size, _ = LayerUtils.get_filter_size(input_shape)
-            filters = LayerUtils.get_number_of_filters()
-            pooling = LayerUtils.is_max_pooling(input_shape)
+            filter_size, _ = ConvolutionalLayerUtils.get_filter_size(input_shape)
+            filters = ConvolutionalLayerUtils.get_number_of_filters()
+            pooling = ConvolutionalLayerUtils.is_max_pooling(input_shape)
             layer = ConvolutionalLayer(filter_size=filter_size, filters=filters, max_pool=pooling,  name='c%d' % i)
             model.convolutional_layers.append(layer)
             if pooling:
@@ -126,7 +120,6 @@ def copy_model(model):
     m = copy.deepcopy(model)
     m.generation = None
     m.validation_accuracy = None
-    m.validation_x_entropy = None
     m.ancestor = None
     m.trainable_parameters = None
     return m
@@ -138,6 +131,13 @@ def load_saved_values(model_name):
     values = load(filepath)
     return copy.deepcopy(values)
 
+
+def remove_values(DIR, all_models, selected):
+    to_remove = set(all_models) - set(selected)
+    for model_name in to_remove:
+        generation, number = model_name.split('_')
+        filepath = os.path.join(DIR, str(generation), '%s_values.p' % number)
+        os.remove(filepath)
 
 def generate_mutated_models(models):
     seen = set()
@@ -182,8 +182,7 @@ def load(filepath):
     return obj
 
 
-def update_mutation_probabilities(models):
-    eval_func = functions.selection_function_val_accuracy
+def update_mutation_probabilities(models, key_function):
     parents = {m.ancestor: m for m in models.values() if m.mutation == 'Keep'} # just filter dictionary
     print('got parents', parents.keys())
 
@@ -195,9 +194,9 @@ def update_mutation_probabilities(models):
     print(rec)
 
     for parent, children in rec.items():
-        parent_eval =  eval_func(parents[parent]) if parent in parents else 0
+        parent_eval =  key_function(parents[parent]) if parent in parents else 0
         for child in children:
-            mutations[child.mutation].append(1 if eval_func(child) >= parent_eval else 0)
+            mutations[child.mutation].append(1 if key_function(child) >= parent_eval else 0)
 
     print(mutations)
 
@@ -214,24 +213,23 @@ def update_mutation_probabilities(models):
 
 
 class LayerUtils(object):
-    conv_alpa = 2
-    conv_beta = 2
-    dense_alpha = 2
-    dense_beta = 2
+    @staticmethod
+    def get_remove_index(number_of_layers):
+        assert number_of_layers > 0
+        return number_of_layers - 1
+
+
+class ConvolutionalLayerUtils(LayerUtils):
+    alpha, beta = 1, 1
 
     @staticmethod
-    def get_filter_size(output_shape, square=True):
-        height, width, _ = output_shape
-        min_height = min(max(int(height / 20), MIN_FILTER_SIZE), MAX_FILTER_SIZE) #3
-        max_height = max(min(int(height / 4), MAX_FILTER_SIZE),MIN_FILTER_SIZE) #8
-        height = np.random.randint(min_height, max_height)
-        return (height, height)
-
+    def has_layers(model):
+        return model.convolutional_layers
     @staticmethod
-    def get_number_of_filters():  # for now returns squared filters but
-        return MIN_FILTERS+int(np.random.beta(LayerUtils.conv_alpa, LayerUtils.conv_beta)*(MAX_FILTERS-MIN_FILTERS))
-
-    @staticmethod # TODO refactor this
+    def get_average_layer_size(model):
+        return np.mean([layer.filters for layer in model.convolutional_layers])
+    # TODO refactor
+    @staticmethod
     def is_max_pooling(output_shape):
         height, width, _ = output_shape
         if height >= 10 and width >= 10:
@@ -241,14 +239,33 @@ class LayerUtils(object):
         return False
 
     @staticmethod
-    def get_desnse_layer_size():
-        return MIN_DENSE_LAYER_SIZE+int(np.random.beta(LayerUtils.dense_alpha,
-                                                       LayerUtils.dense_beta)*(MAX_DENSE_LAYER_SIZE-MIN_DENSE_LAYER_SIZE))
-    @staticmethod
-    def get_remove_index(number_of_layers):
-        assert number_of_layers > 0
-        return number_of_layers - 1
+    def get_number_of_filters():
+        return MIN_FILTERS+int(np.random.beta(ConvolutionalLayerUtils.alpha, ConvolutionalLayerUtils.beta)*(MAX_FILTERS-MIN_FILTERS))
 
+    @staticmethod
+    def get_filter_size(output_shape, square=True):
+        height, width, _ = output_shape
+        min_height = min(max(int(height / 20), MIN_FILTER_SIZE), MAX_FILTER_SIZE) #3
+        max_height = max(min(int(height / 4), MAX_FILTER_SIZE),MIN_FILTER_SIZE) #8
+        height = np.random.randint(min_height, max_height)
+        return (height, height)
+
+
+class DenseLayerUtils(LayerUtils):
+    alpha, beta = 1, 1
+
+    @staticmethod
+    def has_layers(model):
+        return model.dense_layers
+
+    @staticmethod
+    def get_average_layer_size(model):
+        return np.mean([layer.hidden_units for layer in model.dense_layers])
+
+    @staticmethod
+    def get_desnse_layer_size():
+        return MIN_DENSE_LAYER_SIZE+int(np.random.beta(DenseLayerUtils.alpha,DenseLayerUtils.beta) *
+                                                        (MAX_DENSE_LAYER_SIZE-MIN_DENSE_LAYER_SIZE))
 class MutationUtils(object):
     __metaclass__ = abc.ABCMeta
 
@@ -267,8 +284,8 @@ class MutationUtils(object):
 
 class Mutation(object):
     __metaclass__ = abc.ABCMeta
-    alpha = 2
-    beta = 2
+    alpha, beta = 1, 1
+
     @staticmethod
     @abc.abstractmethod
     def get_probability(model):
@@ -310,9 +327,9 @@ class AppendConvolutionalLayer(Mutation):
     def mutate(model, saved_values):
         new_layer_index = len(model.convolutional_layers)
         previous_layer = model.convolutional_layers[-1]
-        filter_size, _ = LayerUtils.get_filter_size(previous_layer.output_shape)
-        filters = LayerUtils.get_number_of_filters()
-        pooling = LayerUtils.is_max_pooling(previous_layer.output_shape)
+        filter_size, _ = ConvolutionalLayerUtils.get_filter_size(previous_layer.output_shape)
+        filters = ConvolutionalLayerUtils.get_number_of_filters()
+        pooling = ConvolutionalLayerUtils.is_max_pooling(previous_layer.output_shape)
         new_layer = ConvolutionalLayer(filter_size=filter_size,
                                        filters=filters, max_pool=pooling,
                                        name='c%d' % new_layer_index)
@@ -331,7 +348,7 @@ class AppendDenselLayer(Mutation):
 
     @staticmethod
     def mutate(model, saved_values):
-        hidden_units = LayerUtils.get_desnse_layer_size() #evolving function
+        hidden_units = DenseLayerUtils.get_desnse_layer_size() #evolving function
         new_layer_index = len(model.dense_layers)
         new_layer = DenseLayer(hidden_units = hidden_units,
                                name='d%d' % new_layer_index)
@@ -385,6 +402,7 @@ class RemoveDenselLayer(Mutation):
         return model, values
 
 
+# TODO don't need probabilities
 class Keep(object):
     @staticmethod
     def get_probability(model):
@@ -428,13 +446,13 @@ class InsertDenseLayer(Mutation):
 		return
 '''
 
-
+# TODO need to adapt probs for this
 class AdoptFilters(CrossOver):
     @staticmethod
     def get_probability(model1, model2):
         """Computes the probability of particular cross over using model information."""
         if AdoptFilters.compatible_layers(model1, model2):
-            return np.random.uniform(0.2,0.9) # for rarin
+            return np.random.uniform(0.2, 0.9) # for rarin
         else:
             return 0
     @staticmethod
@@ -466,16 +484,11 @@ class AdoptFilters(CrossOver):
         layer_v1 = v1[m1_layer.name]
         layer_v2 = v2[m2_layer.name]
 
-        # for testing
-
         new_weights = np.concatenate((layer_v1.weights, layer_v2.weights), axis=3)
         new_biases = np.concatenate((layer_v1.biases, layer_v2.biases), axis=0)
 
         m1.convolutional_layers[m1_layer_idx].filters = new_weights.shape[-1]
         v1[m1_layer.name] = LayerValues(weights=new_weights, biases=new_biases)
-
-        #m1.convolutional_layers[m1_layer_idx].filters = m1.convolutional_layers[
-        # m1_layer_idx].filters+m2.convolutional_layers[m2_layer_idx].filters
 
         new_layer_index = m1_layer_idx + 1
 

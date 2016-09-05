@@ -1,4 +1,4 @@
-CURRENT_GENERATION = 1
+CURRENT_GENERATION = 2
 MAX_GENERATIONS = 3
 POPULATION = 5
 SELECT = 2
@@ -14,8 +14,9 @@ IMAGE_SHAPE = [32, 32, 3] # H, W, C
 MAX_CONVOLUTIONAL_LAYERS = 4
 INITIAL_CONVOLUTIONAL_LAYERS = 3
 MAX_DENSE_LAYERS = 3
-BATCH_SIZE = 256
+BATCH_SIZE = 512
 DIR = 'tournament1'
+REMOVE_VALUES = True
 
 # CRAZINESS how much randomness is allowed to happen, reusing convs from earlier layers
 

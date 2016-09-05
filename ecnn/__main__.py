@@ -3,7 +3,7 @@ import ecnn.tournament as tmnt
 
 def main():
     dataset = ds.get_cifar_10_dataset()
-    dataset.limit_training_set_size(2000)
+    dataset.limit_training_set_size(10000)
     tournament = tmnt.Tournament() # maybe pass in defaults here?
     tournament.run(dataset)
 

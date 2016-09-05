@@ -21,7 +21,7 @@ Model = namedlist('Model', [('generation', NO_DEFAULT),
 							('name', NO_DEFAULT),
 							('ancestor', NO_DEFAULT),
 							('trainable_parameters', NO_DEFAULT),
-							('validation_x_entropy', NO_DEFAULT),
+							('learning_rate', NO_DEFAULT),
 							('validation_accuracy', NO_DEFAULT),
 							('mutation', NO_DEFAULT)], default=None)
 
@@ -48,8 +48,5 @@ TrainingFunctions = namedlist('TrainingFunctions', [('batch_size', NO_DEFAULT), 
 LayerValues = namedlist('LayerValues', ['weights', 'biases'], default=None)
 
 
-
-
-# TODO maybe refactor get probability into functions
 
 
