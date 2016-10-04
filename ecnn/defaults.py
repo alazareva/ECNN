@@ -1,4 +1,5 @@
-CURRENT_GENERATION = 2
+CURRENT_GENERATION = 0
+CURRENT_POPULATION = 0
 MAX_GENERATIONS = 3
 POPULATION = 5
 SELECT = 2
@@ -17,7 +18,4 @@ MAX_DENSE_LAYERS = 3
 BATCH_SIZE = 512
 DIR = 'tournament1'
 REMOVE_VALUES = True
-
-# CRAZINESS how much randomness is allowed to happen, reusing convs from earlier layers
-
-# ZOMBIE : bring back models that were mutated away from earier generations
+GPUS = 0

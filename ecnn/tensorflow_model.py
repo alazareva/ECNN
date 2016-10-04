@@ -134,7 +134,7 @@ class TensorflowModel(object):
                     feed_dict = {y_: test_y, x: test_xs, keep_prob_conv: 1.0,
                                  keep_prob_dense: 1.0}
                     test_accuracy = sess.run([accuracy], feed_dict=feed_dict)
-                    return test_accuracy
+                    return self.model, test_accuracy
 
     def check_nan(self, loss_value):
         if np.isnan(loss_value) or np.isinf(loss_value):

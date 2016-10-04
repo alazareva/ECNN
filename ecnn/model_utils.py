@@ -33,7 +33,7 @@ def input_channels(model):
 
 
 def values_for_testing(model):
-    values = SavedValues() #need this to be SavedValues
+    values = SavedValues()
     for layer in model.convolutional_layers+model.dense_layers + [model.logits]:
         values[layer.name] = []
 
@@ -139,11 +139,12 @@ def remove_values(DIR, all_models, selected):
         filepath = os.path.join(DIR, str(generation), '%s_values.p' % number)
         os.remove(filepath)
 
-def generate_mutated_models(models):
+def generate_mutated_models(models, keep=True):
     seen = set()
     models = list(models.values())
-    for model in models:
-        yield Keep.keep(model)
+    if keep:
+        for model in models:
+            yield Keep.keep(model)
     while True:
         m = models[np.random.choice(len(models))]
         mutations = Mutation.__subclasses__()
@@ -191,14 +192,12 @@ def update_mutation_probabilities(models, key_function):
     for model in models.values():
         if model.mutation != 'Keep' and model.mutation != 'AdoptFilters':
             rec[model.ancestor].append(model)
-    print(rec)
 
     for parent, children in rec.items():
         parent_eval =  key_function(parents[parent]) if parent in parents else 0
         for child in children:
             mutations[child.mutation].append(1 if key_function(child) >= parent_eval else 0)
 
-    print(mutations)
 
     for mutation in Mutation.__subclasses__():
       if mutation.__name__ in mutations:
@@ -338,13 +337,13 @@ class AppendConvolutionalLayer(Mutation):
         model.mutation =   AppendConvolutionalLayer.__name__
         return model, values
 
-class AppendDenselLayer(Mutation):
+class AppendDenseLayer(Mutation):
     @staticmethod
     def get_probability(model):
         if len(model.dense_layers) >= MAX_DENSE_LAYERS:
             return 0
         else:
-            return np.random.beta(AppendDenselLayer.alpha, AppendDenselLayer.beta)
+            return np.random.beta(AppendDenseLayer.alpha, AppendDenseLayer.beta)
 
     @staticmethod
     def mutate(model, saved_values):
@@ -355,7 +354,7 @@ class AppendDenselLayer(Mutation):
         model.dense_layers.append(new_layer)
         new_layer_index += len(model.convolutional_layers)
         values = MutationUtils.update_values(model, saved_values, new_layer_index)
-        model.mutation =   AppendDenselLayer.__name__
+        model.mutation =   AppendDenseLayer.__name__
         return model, values
 
 class RemoveConvolutionalLayer(Mutation):
@@ -380,13 +379,13 @@ class RemoveConvolutionalLayer(Mutation):
         return model, values
 
 
-class RemoveDenselLayer(Mutation):
+class RemoveDenseLayer(Mutation):
     @staticmethod
     def get_probability(model):
         if len(model.dense_layers) == 0:
             return 0
         else:
-            return np.random.beta(RemoveDenselLayer.alpha, RemoveDenselLayer.beta)
+            return np.random.beta(RemoveDenseLayer.alpha, RemoveDenseLayer.beta)
 
     @staticmethod
     def mutate(model, saved_values):
@@ -398,7 +397,7 @@ class RemoveDenselLayer(Mutation):
             layer.name = 'd%d' % i
         layer_index += len(model.convolutional_layers)
         values = MutationUtils.update_values(model, saved_values, layer_index)
-        model.mutation =   RemoveDenselLayer.__name__
+        model.mutation =   RemoveDenseLayer.__name__
         return model, values
 
 

@@ -63,7 +63,7 @@ def get_partial_attr(models, attrs):
     return partial(sort_on_attrs, means=means, attrs=attrs)
 
 def sort_on_accuracy_params(models): #first is the parameter and the second is contribution
-    attrs = [('validation_accuracy', 1), ('trainable_parameters', -1)]
+    attrs = [('validation_accuracy', 1), ('trainable_parameters', -0.5)]
     return get_partial_attr(models, attrs)
 
 

@@ -12,7 +12,7 @@ class SavedValues(dict):
 
 
 OutputLayer = namedlist('OutputLayer', [('name', 'logits'), ('hidden_units', NUM_CLASSES),
-										('training_history', [0]*MAX_GENERATIONS)], use_slots=True, default=None)
+										('training_history', [0]*MAX_GENERATIONS*2)], use_slots=True, default=None)
 
 Model = namedlist('Model', [('generation', NO_DEFAULT),
 							('convolutional_layers', FACTORY(list)),
