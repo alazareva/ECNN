@@ -3,12 +3,11 @@
 ECNN: A Convolutional Neural Network Generator based on Adaptive Evolutionary Algorithms
 
 ## Getting Started
-'''
-'''
+
 ### Prerequisities
-*Python 3
-*Numpy
-*TensorFlow
+* Python 3
+* Numpy
+* TensorFlow
 
 
 ### Installing
