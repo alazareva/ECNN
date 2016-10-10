@@ -1,7 +1,17 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project version="4">
   <component name="ChangeListManager">
-    <list default="true" id="189977df-d16c-4fe1-bf4d-545adba3a93e" name="Default" comment="adding comments for model utils">
+    <list default="true" id="189977df-d16c-4fe1-bf4d-545adba3a93e" name="Default" comment="">
+      <change type="DELETED" beforePath="$PROJECT_DIR$/ecnn/tests/TODO" afterPath="" />
+      <change type="DELETED" beforePath="$PROJECT_DIR$/ecnn/tests/__init__.py" afterPath="" />
+      <change type="DELETED" beforePath="$PROJECT_DIR$/ecnn/tests/test__model_to_string.py" afterPath="" />
+      <change type="DELETED" beforePath="$PROJECT_DIR$/ecnn/tests/test_append_convolutional_layer.py" afterPath="" />
+      <change type="DELETED" beforePath="$PROJECT_DIR$/ecnn/tests/test_append_dense_layer.py" afterPath="" />
+      <change type="DELETED" beforePath="$PROJECT_DIR$/ecnn/tests/test_cross_models.py" afterPath="" />
+      <change type="DELETED" beforePath="$PROJECT_DIR$/ecnn/tests/test_possible_cross_overs.py" afterPath="" />
+      <change type="DELETED" beforePath="$PROJECT_DIR$/ecnn/tests/test_remove_convolutional_layer.py" afterPath="" />
+      <change type="DELETED" beforePath="$PROJECT_DIR$/ecnn/tests/test_remove_dense_layer.py" afterPath="" />
+      <change type="DELETED" beforePath="$PROJECT_DIR$/ecnn/tests/test_tensorflowModel.py" afterPath="" />
       <change type="MODIFICATION" beforePath="$PROJECT_DIR$/.idea/workspace.xml" afterPath="$PROJECT_DIR$/.idea/workspace.xml" />
     </list>
     <ignored path="cnn_ga.iws" />
@@ -23,16 +33,6 @@
   </component>
   <component name="FileEditorManager">
     <leaf SIDE_TABS_SIZE_LIMIT_KEY="300">
-      <file leaf-file-name="TODO" pinned="false" current-in-tab="false">
-        <entry file="file://$PROJECT_DIR$/ecnn/tests/TODO">
-          <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="45">
-              <caret line="3" column="0" selection-start-line="3" selection-start-column="0" selection-end-line="10" selection-end-column="7" />
-              <folding />
-            </state>
-          </provider>
-        </entry>
-      </file>
       <file leaf-file-name="tournament.py" pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/ecnn/tournament.py">
           <provider selected="true" editor-type-id="text-editor">
@@ -681,7 +681,14 @@
       <option name="project" value="LOCAL" />
       <updated>1476072260850</updated>
     </task>
-    <option name="localTasksCounter" value="21" />
+    <task id="LOCAL-00021" summary="removing old tests">
+      <created>1476072827986</created>
+      <option name="number" value="00021" />
+      <option name="presentableId" value="LOCAL-00021" />
+      <option name="project" value="LOCAL" />
+      <updated>1476072827987</updated>
+    </task>
+    <option name="localTasksCounter" value="22" />
     <servers />
   </component>
   <component name="TestHistory">
@@ -777,7 +784,8 @@
     <MESSAGE value="before refactoring learning rate&#10;" />
     <MESSAGE value="before multiprocessing" />
     <MESSAGE value="adding comments for model utils" />
-    <option name="LAST_COMMIT_MESSAGE" value="adding comments for model utils" />
+    <MESSAGE value="removing old tests" />
+    <option name="LAST_COMMIT_MESSAGE" value="removing old tests" />
   </component>
   <component name="XDebuggerManager">
     <breakpoint-manager>
