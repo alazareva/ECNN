@@ -1,6 +1,5 @@
-# Project Title
-
-ECNN: A Convolutional Neural Network Generator based on Adaptive Evolutionary Algorithms
+# ECNN
+A Convolutional Neural Network Generator based on Adaptive Evolutionary Algorithms
 
 ## Getting Started
 
