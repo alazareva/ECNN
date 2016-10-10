@@ -23,38 +23,65 @@ def model_to_string(model):
 
 
 def filters(model):
+    """Returns a list of containing the number of filters for each convolutional layer in a model.
+
+    Keyword arguments:
+    model -- Model as defined in class_defs
+    """
     return [l.filters for l  in model.convolutional_layers]
 
 def input_channels(model):
+    """Returns a list of containing the number of input channels for each convolutional layer in a model.
+
+    Keyword arguments:
+    model -- Model as defined in class_defs
+    """
     ic = [IMAGE_SHAPE[-1]]
     for l in model.convolutional_layers[:-1]:
         ic.append(l.filters)
     return ic
 
 
-def values_for_testing(model):
-    values = SavedValues()
-    for layer in model.convolutional_layers+model.dense_layers + [model.logits]:
-        values[layer.name] = []
-
-    return values
-
-
 def save(obj, filepath):
+    """Saves an object using the specified filepath.
+
+    Keyword arguments:
+    obj -- a Python object
+    filepath -- a filepath, must have a '.p' extention
+    """
     with open(filepath, 'wb') as ofile:
         pickle.dump(obj, ofile)
 
 
 def select_models(models, key_function, select):
+    """Returns the best fit models.
+
+    Keyword arguments:
+    models -- a dictionary containing model names as keys and Models as values
+    key_function -- the function used to sort the models in ascending order
+    select -- the numbere of models to select
+    """
     sorted_models = sorted(models.values(), key=key_function)
     return {model.name: model for model in sorted_models[-select:]}
 
 
 def update_probabilities(models, key_function):
+    """Updates the probability distribution parameters for mutations and layer sizes.
+
+    Keyword arguments:
+    models -- a dictionary containing model names as keys and Models as values
+    key_function -- the function used to sort the models in ascending order
+    """
     update_layer_value_probabilities(models, key_function)
     update_mutation_probabilities(models, key_function)
 
 def update_layer_value_probabilities(models, key_function):
+    """Updates the probability distribution parameters for layer sizes.
+
+    Keyword arguments:
+    models -- a dictionary containing model names as keys and Models as values
+    key_function -- the function used to sort the models in ascending order
+    """
     sorted_models = sorted(models.values(), key=key_function)
     top = sorted_models[-SELECT:]
     bottom = sorted_models[:-SELECT]
@@ -63,6 +90,13 @@ def update_layer_value_probabilities(models, key_function):
 
 
 def restore_probabilities(mutation_alpha_beta, layer_alpha_beta):
+    """Restores the probability parameters using serialized values.
+
+    Keyword arguments:
+    mutation_alpha_beta -- a dictionary with mutation names as keys and (alpha, beta) tuples as values
+    layer_alpha_beta -- a dictionary with layer utilities names as keys and (alpha, beta) tuples as values
+    """
+
     for m in Mutation.__subclasses__():
         m.alpha, m.beta = mutation_alpha_beta[m.__name__]
         print('restored', m.alpha, m.beta)
@@ -71,6 +105,14 @@ def restore_probabilities(mutation_alpha_beta, layer_alpha_beta):
         print('restored', lu.alpha, lu.beta)
 
 def update_layer_value_probs(bottom, top, cls):
+    """Updates the probability distribution parameters for layer sizes.
+
+    Keyword arguments:
+    bottom -- the low performing models
+    top -- the high performing models
+    cls -- the layer utilities class corresponding to Concolutional Layers or Dense Layers
+    """
+
     top = [cls.get_average_layer_size(model) for model in top if cls.has_layers(model)]
     bottom = [cls.get_average_layer_size(model) for model in bottom if cls.has_layers(model)]
     if top and bottom:
@@ -87,10 +129,9 @@ def update_layer_value_probs(bottom, top, cls):
 
 
 def generate_initial_population():
-    ''' Returns a generator that yeilds random models with
-    one convolutional layer followed by a fully connected output layer
-
-    '''
+    """Returns a generator tha yields models to make up the initial population
+    The models consist of up to INITIAL_CONVOLUTIONAL_LAYERS number of convolutional layers.
+    """
     while True:
         model = Model()
         number_of_initial_convo_layers = np.random.randint(2, INITIAL_CONVOLUTIONAL_LAYERS)
@@ -110,6 +151,11 @@ def generate_initial_population():
 
 
 def load_model(model_name):
+    """Retuns a deep copy of a model loaded from a pickle file.
+
+    Keyword arguments:
+    model_name -- the name of the model
+    """
     generation, number = model_name.split('_')
     filepath = os.path.join(DIR, str(generation), '%s_model.p' % number)
     model = load(filepath)
@@ -117,6 +163,11 @@ def load_model(model_name):
 
 
 def copy_model(model):
+    """Retuns a deep copy of a model removing unnessessary information.
+
+    Keyword arguments:
+    model -- a Model instance
+    """
     m = copy.deepcopy(model)
     m.generation = None
     m.validation_accuracy = None
@@ -126,13 +177,24 @@ def copy_model(model):
 
 
 def load_saved_values(model_name):
+    """Retuns a deep copy of saved model parameters loaded from a pickle file.
+
+    Keyword arguments:
+    model_name -- the name of the model
+    """
     generation, number = model_name.split('_')
     filepath = os.path.join(DIR, str(generation), '%s_values.p' % number)
     values = load(filepath)
     return copy.deepcopy(values)
 
 
-def remove_values(DIR, all_models, selected):
+def remove_values(all_models, selected):
+    """Deletes pickle files containing model parameters for non-selected models.
+
+    Keyword arguments:
+    all_models -- a list containing the names of all models in a generation
+    selected -- a list containing the names of all selected models in a generation
+    """
     to_remove = set(all_models) - set(selected)
     for model_name in to_remove:
         generation, number = model_name.split('_')
@@ -140,6 +202,13 @@ def remove_values(DIR, all_models, selected):
         os.remove(filepath)
 
 def generate_mutated_models(models, keep=True):
+    """Returns a generator tha yields generated or crossed models to make up a new generation
+
+    Keyword arguments:
+    models -- a list containing the models to be mutated or crossed
+    keep -- boolean indicating if the provided models should remain unchanged in the next generation
+    """
+
     seen = set()
     models = list(models.values())
     if keep:
@@ -178,14 +247,25 @@ def load_summaries(generation):
 
 
 def load(filepath):
+    """Returns an object loaded from the provided file path
+
+    Keyword arguments:
+    filepath -- the path to a picke file containing the object must have a '.p' extention
+    """
     with open(filepath, 'rb') as ifile:
         obj = pickle.load(ifile)
     return obj
 
 
 def update_mutation_probabilities(models, key_function):
-    parents = {m.ancestor: m for m in models.values() if m.mutation == 'Keep'} # just filter dictionary
-    print('got parents', parents.keys())
+    """Updates the alpha and beta parameters of the mutation probability distributions based on model
+    performance
+
+    Keyword arguments:
+    models -- a dictionary with Models as values
+    key_function -- the function used to rank models in terms of fit in ascending order
+    """
+    parents = {m.ancestor: m for m in models.values() if m.mutation == 'Keep'}
 
     rec = defaultdict(list)
     mutations = defaultdict(list)
@@ -214,6 +294,11 @@ def update_mutation_probabilities(models, key_function):
 class LayerUtils(object):
     @staticmethod
     def get_remove_index(number_of_layers):
+        """Returns the index of the layer to be removed
+
+        Keyword arguments:
+        number_of_layers -- the number of Convolutional or Dense layers in the network
+        """
         assert number_of_layers > 0
         return number_of_layers - 1
 
@@ -223,13 +308,28 @@ class ConvolutionalLayerUtils(LayerUtils):
 
     @staticmethod
     def has_layers(model):
+        """Returns a boolean indicating if a model is one or more convolutional layers
+
+        Keyword arguments:
+        model -- the Model
+        """
         return model.convolutional_layers
     @staticmethod
     def get_average_layer_size(model):
+        """Returns the average number of filters for all Convolutional Layers in the model
+
+        Keyword arguments:
+        model -- the Model
+        """
         return np.mean([layer.filters for layer in model.convolutional_layers])
-    # TODO refactor
     @staticmethod
     def is_max_pooling(output_shape):
+        """Returns a boolean indicating if pooling should be used, if the output shape is greater than 10 by 10
+        pooling will be applied 30% of the time
+
+        Keyword arguments:
+        outout shape -- the shape of the output the convolution operation
+        """
         height, width, _ = output_shape
         if height >= 10 and width >= 10:
             choice = np.random.randint(0, 100)
@@ -239,13 +339,20 @@ class ConvolutionalLayerUtils(LayerUtils):
 
     @staticmethod
     def get_number_of_filters():
+        """Returns a randomly selected number of filters
+        """
         return MIN_FILTERS+int(np.random.beta(ConvolutionalLayerUtils.alpha, ConvolutionalLayerUtils.beta)*(MAX_FILTERS-MIN_FILTERS))
 
     @staticmethod
-    def get_filter_size(output_shape, square=True):
+    def get_filter_size(output_shape):
+        """Returns the size of the square filters for a convolutional layer
+
+        Keyword arguments:
+        outout shape -- the shape of the output the previos layer
+        """
         height, width, _ = output_shape
-        min_height = min(max(int(height / 20), MIN_FILTER_SIZE), MAX_FILTER_SIZE) #3
-        max_height = max(min(int(height / 4), MAX_FILTER_SIZE),MIN_FILTER_SIZE) #8
+        min_height = min(max(int(height / 20), MIN_FILTER_SIZE), MAX_FILTER_SIZE)
+        max_height = max(min(int(height / 4), MAX_FILTER_SIZE),MIN_FILTER_SIZE)
         height = np.random.randint(min_height, max_height)
         return (height, height)
 
@@ -255,14 +362,26 @@ class DenseLayerUtils(LayerUtils):
 
     @staticmethod
     def has_layers(model):
+        """Returns a boolean indicating if a model is one or more dense layers
+
+          Keyword arguments:
+          model -- the Model
+          """
         return model.dense_layers
 
     @staticmethod
     def get_average_layer_size(model):
+        """Returns the average number of filters for all Dense Layers in the model
+
+        Keyword arguments:
+        model -- the Model
+        """
         return np.mean([layer.hidden_units for layer in model.dense_layers])
 
     @staticmethod
     def get_desnse_layer_size():
+        """Returns a randomly generated number of hidden units for a dense layer
+        """
         return MIN_DENSE_LAYER_SIZE+int(np.random.beta(DenseLayerUtils.alpha,DenseLayerUtils.beta) *
                                                         (MAX_DENSE_LAYER_SIZE-MIN_DENSE_LAYER_SIZE))
 class MutationUtils(object):
@@ -270,6 +389,15 @@ class MutationUtils(object):
 
     @staticmethod
     def update_values(model, saved_values, new_layer_index, removed=False):
+        """Returns saved values for all layers not affected by an evolutionary operation
+
+        Keyword arguments:
+        model -- the Model
+        saved_values -- the SavedValues for the model
+        new_layer_index -- the index of the new layer or the first layer affect4ed by layer removal
+        removed -- boolean indicating if a layer removal occured
+        """
+
         new_saved_values = {}
 
         for i, layer in enumerate(model.convolutional_layers + model.dense_layers + [model.logits]):
@@ -294,7 +422,7 @@ class Mutation(object):
     @staticmethod
     @abc.abstractmethod
     def mutate(model, saved_values):
-        """mutates the model."""
+        """Mutates the model."""
         return
 
 
@@ -309,6 +437,7 @@ class CrossOver(object):
     @staticmethod
     @abc.abstractmethod
     def cross(model_values1, model_values2):
+        """Crosses the two models"""
         return
 
 
@@ -418,44 +547,16 @@ class Keep(object):
         return m, load_saved_values(m.name)
 
 
-'''
-class InsertConvolutionalLayer(Mutation):
-	@staticmethod
-	def get_probability(summary):
-		conv_layers, _ = summary.layer_counts
-		if conv_layers < MAX_CONVOLUTIONAL_LAYERS:
-			return np.random.uniform(0.1, 0.2)
-		else:
-			pass
-
-	@staticmethod
-	def mutate(model):
-		"""mutates the model."""
-		return
-
-class InsertDenseLayer(Mutation):
-	@staticmethod
-	def get_probability(model):
-		"""Concrete the probability of particular mutation using model information."""
-		return
-
-	@staticmethod
-	def mutate(model, saved_values):
-		"""mutates the model."""
-		return
-'''
-
-# TODO need to adapt probs for this
 class AdoptFilters(CrossOver):
     @staticmethod
     def get_probability(model1, model2):
         """Computes the probability of particular cross over using model information."""
         if AdoptFilters.compatible_layers(model1, model2):
-            return np.random.uniform(0.2, 0.9) # for rarin
+            return np.random.uniform(0.2, 0.9)
         else:
             return 0
     @staticmethod
-    def compatible_layers(model1, model2): #maybe model instead of model summary can be used and the other is run
+    def compatible_layers(model1, model2):
         # summary
         filters1 = np.array(filters(model1))
         filters2 = np.array(filters(model2))

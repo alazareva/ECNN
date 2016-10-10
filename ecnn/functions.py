@@ -5,8 +5,8 @@ from functools import partial
 
 
 
-def iterations(number_of_training_parameters):
-    return 5  # could change this to be based on params
+def iterations():
+    return 5
 
 
 def learning_rate(lr=LEARNING_RATE):
@@ -64,6 +64,10 @@ def get_partial_attr(models, attrs):
 
 def sort_on_accuracy_params(models): #first is the parameter and the second is contribution
     attrs = [('validation_accuracy', 1), ('trainable_parameters', -0.5)]
+    return get_partial_attr(models, attrs)
+
+def sort_on_accuracy(models): #first is the parameter and the second is contribution
+    attrs = [('validation_accuracy', 1)]
     return get_partial_attr(models, attrs)
 
 

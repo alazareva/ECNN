@@ -74,7 +74,7 @@ class TensorflowModel(object):
                     sess.run(init)
                     batch_size = self.training_functions.batch_size()
 
-                    max_epohs = self.training_functions.iterations(number_of_params_to_train)
+                    max_epohs = self.training_functions.iterations()
                     batches_per_epoh = int(dataset.training_set_size / batch_size)
                     max_batches =  batches_per_epoh * max_epohs
                     stopping_rule = training_functions.stopping_rule()
@@ -92,16 +92,19 @@ class TensorflowModel(object):
                                      learning_rate: lr}
 
                         _, loss_value = sess.run([train_op, loss], feed_dict=feed_dict)
-                        self.check_nan(loss_value)
+                        if self.check_nan(loss_value):
+                            self.model.validation_accuracy = 0
+                            self.model.learning_rate = lr
+                            self.model.trainable_parameters = number_of_params_to_train
+                            return self.model, SavedValues()
                         step += 1
-                        if step % batches_per_epoh == 0: # TODO maybe revert old values if stopping rule
+                        if step % batches_per_epoh == 0:
                             cross_entropy_value = sess.run(cross_entropy, feed_dict=feed_dict)
                             lr = learning_rate_func(cross_entropy_value)
                             val_xs, val_y = dataset.X_val, dataset.y_val
                             feed_dict = {y_: val_y, x: val_xs, keep_prob_conv: 1.0, keep_prob_dense: 1.0}
                             val_acc = sess.run(accuracy, feed_dict=feed_dict)
                             if stopping_rule(val_acc):
-                                 print('stopping rule')
                                  break
 
 
@@ -130,15 +133,19 @@ class TensorflowModel(object):
                 init = tf.initialize_all_variables()
                 with tf.Session() as sess:
                     sess.run(init)
-                    test_xs, test_y = dataset.X_test, dataset.y_test
-                    feed_dict = {y_: test_y, x: test_xs, keep_prob_conv: 1.0,
-                                 keep_prob_dense: 1.0}
-                    test_accuracy = sess.run([accuracy], feed_dict=feed_dict)
-                    return self.model, test_accuracy
+                    acc_values = []
+                    test_data = dataset.get_test_data()
+                    for test_xs, test_y in test_data:
+                        feed_dict = {y_: test_y, x: test_xs, keep_prob_conv: 1.0,
+                                     keep_prob_dense: 1.0}
+                        test_accuracy = sess.run([accuracy], feed_dict=feed_dict)
+                        acc_values.append(test_accuracy)
+                    return self.model, np.mean(acc_values)
 
     def check_nan(self, loss_value):
         if np.isnan(loss_value) or np.isinf(loss_value):
-            raise ValueError('Model diverged with loss = NaN or inf')
+            return True
+        return False
 
     def get_tensor_shape(self, tensor):
         """

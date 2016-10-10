@@ -1,14 +1,11 @@
-test for validation set regenerations
-test compicated sorted functions
-selected = {'2_4': tournament_report[2]['selected']['2_4'],
-            '1_19': tournament_report[1]['selected']['1_19'],
-             '10_9': tournament_report[10]['selected']['10_9'],
-             '6_7': tournament_report[6]['selected']['6_7']}
+add docstrings
+refactor tournament run
 
-tournament_report[2]['selected']['2_14'] = tournament_report[2]['all']['2_14']
-tournament_report[2]['selected']['2_11'] = tournament_report[2]['all']['2_11']
-tournament_report[2]['selected']['2_12'] = tournament_report[2]['all']['2_12']
-del tournament_report[2]['selected']['2_2']
-tournament_report[2]['selected']['2_16']
-tournament_report[2]['selected']['2_5']
-model_utils.save(tournament_report, os.path.join(DIR,'report.p'))
+    """Description.
+
+    Arguments:
+
+    Keyword arguments:
+    a -- disc
+    b -- disc
+    """

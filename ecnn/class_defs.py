@@ -1,10 +1,5 @@
 from namedlist import namedlist, FACTORY, NO_DEFAULT
 from ecnn.defaults import  *
-#
-
-# TODO image shape and training set size are no
-# TODO global config file
-
 
 class SavedValues(dict):
 	def __init__(self):
