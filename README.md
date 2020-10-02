@@ -15,7 +15,7 @@ Tournament defautls can be set in defaults.py.
 * Pickle
 
 ### Examples 
-For full list of results please see the [Report](https://github.com/alazareva/ECNN/blob/pdf/report.pdf) 
+For full list of results please see the [Report](https://github.com/alazareva/ECNN/blob/master/report.pdf) 
 Example tournament results showing mutations applied at each generation and resulting CNN performance.
 
 ![Ex1](https://github.com/alazareva/ECNN/blob/master/examples/screenshot_2.jpg)
