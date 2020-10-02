@@ -15,11 +15,7 @@ Tournament defautls can be set in defaults.py.
 * Pickle
 
 ### Report 
-<object data="https://github.com/alazareva/ECNN/blob/master/report.pdf" type="application/pdf">
-    <embed src="https://github.com/alazareva/ECNN/blob/master/report.pdf">
-        <p>This browser does not support PDFs. Please download the PDF to view it: <a href="https://github.com/alazareva/ECNN/blob/master/report.pdf">Download PDF</a>.</p>
-    </embed>
-</object>
+<iframe src="https://github.com/alazareva/ECNN/blob/master/report.pdf"></iframe>
 
 ## Authors
 
